@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-21 (session 1, after M3)",
+  "updated": "2026-09-21 (session 1, after M8 + hardening pass)",
   "legend": {
     "status": ["pending", "in_progress", "passing", "failing", "blocked"]
   },
@@ -163,7 +163,15 @@
       "id": "activity-log-no-sensitive-content",
       "milestone": "M9",
       "description": "Activity log entries summarize actions without persisting full email bodies or other sensitive content",
-      "status": "pending"
+      "status": "passing",
+      "verified": "code review: logActivity() call sites always pass short summaries, never raw email bodies/drafts; verified in-browser Activity Log output shows only summaries, 2026-09-21"
+    },
+    {
+      "id": "unit-tests-planning-scoring",
+      "milestone": "M9",
+      "description": "Pure-logic modules (dashboard scoring, daily/weekly plan generation, JSON field helpers) have automated Vitest coverage",
+      "status": "passing",
+      "verified": "npm test: 25/25 passing across 4 test files, 2026-09-21. Caught and fixed a real defensive-filtering gap in generateDailyPlan; documented (not yet fixed) a UTC-vs-local timezone edge case in generateWeeklyPlan's due-date bucketing"
     }
   ]
 }

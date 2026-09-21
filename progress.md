@@ -153,14 +153,30 @@ real, working page against real seeded data; nothing 404s from the sidebar anymo
   completions, project creation) — confirms the audit trail has been live and correct
   throughout the session, not just for one feature.
 
-## Immediate next steps (pick up here)
+## M9 — hardening (in progress)
 
-M9 — hardening pass: automated tests (Vitest is installed but no test files exist yet — the
-planning generators in `src/lib/planning/` and the scoring logic in
-`src/lib/dashboard/scoring.ts` are pure functions and the highest-value first targets), remaining
-edge/empty/error states, a fresh re-read of every write path against the confirmation rules in
-PRODUCT_SPEC.md §20 now that all features exist, and a first-time-user pass (no demo data) to
-check empty states end to end.
+- [x] **Automated tests**: `vitest.config.mts` added (node environment, `@` alias resolved
+      manually since this isn't a Vite app). 25 tests across
+      `src/lib/dashboard/scoring.test.ts`, `src/lib/planning/generate-daily.test.ts`,
+      `src/lib/planning/generate-weekly.test.ts`, `src/lib/db/fields.test.ts` — all pure-logic
+      modules, no DB/network needed. Writing these caught one real bug and one real gap:
+      - **Bug found & fixed**: `generateDailyPlan` never filtered `candidateTasks` by status
+        itself — it relied entirely on the caller already excluding COMPLETED/CANCELLED tasks.
+        A test passing a completed task directly proved it would still get scheduled. Fixed by
+        filtering defensively inside the function (`src/lib/planning/generate-daily.ts`)
+        instead of trusting the caller's contract.
+      - **Gap documented, not fixed**: `generateWeeklyPlan`'s day buckets come from
+        `startOfWeek`/`addDays` (local time) while task `dueDate`s set via `<input
+        type="date">` parse as **UTC** midnight (per the HTML date input / `Date` spec). For a
+        user in a timezone ahead of UTC, a deadline expressed near a day boundary could land in
+        an unexpected local-time bucket. Not reproducible with this machine's local timezone in
+        testing, and low-impact (off by at most one day, only near midnight-UTC deadlines), but
+        worth a proper fix (store/compare dates consistently, e.g. always in UTC calendar days)
+        before this app is used by someone outside UTC-adjacent timezones. Left as a known gap
+        rather than a rushed fix.
+- [ ] Remaining edge/empty/error states pass.
+- [ ] Fresh re-read of every write path against the confirmation rules in PRODUCT_SPEC.md §20.
+- [ ] First-time-user pass (no demo data) to check empty states end to end.
 6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
    placeholder-free gaps; nav links to them already exist and currently 404.
 

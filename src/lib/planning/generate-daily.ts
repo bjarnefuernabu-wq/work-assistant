@@ -139,9 +139,13 @@ export function generateDailyPlan({
     }
   }
 
-  // 4. Fill remaining budget with the most urgent open tasks.
+  // 4. Fill remaining budget with the most urgent open tasks. Defensively excludes
+  // completed/cancelled tasks even though callers are expected to filter them out already —
+  // this function shouldn't trust that contract silently.
   const taskBudget = Math.max(0, targetMinutes - usedMinutes - FOLLOWUP_MINUTES);
-  const sortedTasks = [...candidateTasks].sort((a, b) => taskUrgencyScore(b, day) - taskUrgencyScore(a, day));
+  const sortedTasks = [...candidateTasks]
+    .filter((t) => t.status !== "COMPLETED" && t.status !== "CANCELLED")
+    .sort((a, b) => taskUrgencyScore(b, day) - taskUrgencyScore(a, day));
   let taskMinutesUsed = 0;
   for (const task of sortedTasks) {
     if (taskMinutesUsed >= taskBudget) break;
