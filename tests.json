@@ -107,13 +107,15 @@
       "id": "connector-mock-calendar-sync",
       "milestone": "M6",
       "description": "Running the mock calendar connector sync twice does not duplicate events (idempotent upsert by externalId)",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser: two consecutive 'Sync now' clicks both report 4 items, /calendar shows exactly one row per event, 2026-09-21"
     },
     {
       "id": "connector-disconnected-state",
       "milestone": "M6",
       "description": "A disconnected connector shows a clear disconnected state in Settings and does not silently show stale data as live",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser: pre-connect state shows 'Disconnected' badge + Connect button; a real (accidental) sync failure surfaced as 'Sync error' badge with the actual error text, 2026-09-21"
     },
     {
       "id": "email-draft-never-autosend",

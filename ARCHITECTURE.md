@@ -106,6 +106,20 @@ hard-code Anthropic only (rejected — spec explicitly requires a swappable prov
 which is explicit about being a fallback in its own responses so the user is never misled into
 thinking a rule-based answer is a real model's reasoning.
 
+### D8 — Idempotent sync needs real DB uniqueness, not just app-level checks
+**Decision**: Added `@@unique([connectorId, externalId])` to `CalendarEvent`/`EmailThread` and
+`@@unique([threadId, externalId])` to `EmailMessage`, then used `prisma.upsert` (not
+find-then-create) in both mock connectors.
+**Rationale**: PRODUCT_SPEC.md §19/§22 requires idempotent sync and duplicate prevention. A
+database-level unique constraint plus a true upsert is race-safe; an app-level "check then
+insert" is not (two concurrent syncs could both pass the check). Applying this schema change
+required `prisma db push --accept-data-loss`, which Prisma's CLI refuses to run for an AI agent
+without fresh, explicit consent (a built-in safety gate, not project-specific) — obtained via
+`AskUserQuestion` even though the affected `dev.db` contained only regenerable seed data.
+**Consequences**: Re-syncing is safe to click repeatedly; verified in-browser (two consecutive
+manual syncs, zero duplicate rows). A real provider's connector implementation must supply a
+stable `externalId` from the upstream API for this to hold.
+
 ### D7 — Modular monolith, not microservices
 **Decision**: Single Next.js app; Server Actions/Route Handlers for mutations; no separate
 backend service, queue, or job runner process.

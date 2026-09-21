@@ -412,6 +412,7 @@ model CalendarEvent {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
+  @@unique([connectorId, externalId])
   @@index([userId, startTime])
   @@index([projectId])
 }
@@ -442,6 +443,7 @@ model EmailThread {
   messages EmailMessage[]
   drafts   EmailDraft[]
 
+  @@unique([connectorId, externalId])
   @@index([userId, lastMessageAt])
   @@index([projectId])
 }
@@ -459,6 +461,7 @@ model EmailMessage {
   isFromUser     Boolean     @default(false)
   createdAt      DateTime    @default(now())
 
+  @@unique([threadId, externalId])
   @@index([threadId, sentAt])
 }
 

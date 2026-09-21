@@ -80,7 +80,21 @@ terminal opened after the installs won't need this.
       `/planning/week` "Apply this plan" button, which shares the same `ConfirmButton` pattern.
       Chat history is client-side React state only (not persisted) — acceptable for MVP, noted
       as a gap.
-- [ ] **M6 — Connectors**: not started.
+- [x] **M6 — Connectors**: `src/lib/connectors/types.ts` defines `CalendarConnector`/
+      `MailConnector`; `mock-calendar.ts`/`mock-mail.ts` implement them against a fixed fixture
+      set (what a real API would hand back), upserting by `(connectorId, externalId)` — added
+      real `@@unique` DB constraints for this (required a `prisma db push --accept-data-loss`
+      on the local dev-only `dev.db`; Prisma's CLI has a built-in AI-agent safety gate for that
+      flag, so this went through `AskUserQuestion` first even though the data was disposable
+      seed data). `/settings` has full connector lifecycle: connect, sync now, disconnect,
+      and visible sync-error state with the actual error message — verified in-browser
+      end-to-end including a real (accidental, then fixed) sync failure surfacing correctly as
+      "Sync error" with the error text, and two consecutive "Sync now" clicks both reporting
+      the same item count with zero duplicates on `/calendar` (idempotency confirmed). Added
+      `/calendar` (agenda view, next 21 days) since the nav already linked there. Settings also
+      surfaces AI provider status (live/mock) and full memory CRUD (add/edit/delete
+      `MemoryEntry`, grouped by category) — satisfies the "visible, editable, deletable, never
+      silent" memory requirement.
 - [ ] **M7 — Email & follow-ups**: not started.
 - [ ] **M8 — Briefings**: not started.
 - [ ] **M9 — Hardening**: not started.
@@ -100,12 +114,12 @@ terminal opened after the installs won't need this.
 
 ## Immediate next steps (pick up here)
 
-1. M6 — Connectors: `src/lib/connectors/types.ts` interfaces + mock calendar/mail connectors
-   with idempotent sync, `/settings` connector management UI.
-3. M7 — Email assistant + follow-ups UI (`/email`, `/followups`) — data model already seeded,
+1. M7 — Email assistant + follow-ups UI (`/email`, `/followups`) — data model already seeded,
    needs pages + draft workflow (generate → show → edit → confirm → send).
-4. M8 — Morning briefing / weekly review generation.
-5. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
+2. M8 — Morning briefing / weekly review generation.
+3. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
+4. Search (`/search`) and Activity log (`/activity`) pages — still 404 gaps; nav already links
+   to them.
 6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
    placeholder-free gaps; nav links to them already exist and currently 404.
 
