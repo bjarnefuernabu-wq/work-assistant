@@ -1,4 +1,4 @@
-import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 declare global {
@@ -6,8 +6,11 @@ declare global {
 }
 
 function createClient() {
-  const url = process.env.DATABASE_URL ?? "file:./dev.db";
-  const adapter = new PrismaLibSql({ url });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL is not set. See .env.example.");
+  }
+  const adapter = new PrismaPg({ connectionString });
   return new PrismaClient({ adapter });
 }
 

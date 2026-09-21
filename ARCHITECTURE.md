@@ -145,6 +145,36 @@ Interpolation uses `{varName}` placeholders with a plain `.replaceAll`, not ICU 
 for this app's register (short, action-oriented UI copy), would need revisiting for a language
 with real grammatical plural rules beyond German's.
 
+### D10 — Switched SQLite → PostgreSQL for the hosted deployment
+**Decision**: `prisma/schema.prisma`'s datasource provider changed from `sqlite` to
+`postgresql`; `src/lib/db/client.ts` now uses `@prisma/adapter-pg` (standard node-postgres)
+instead of `@prisma/adapter-libsql`. `DATABASE_URL` is now a Postgres connection string
+everywhere, including local development — there's no separate local-SQLite/hosted-Postgres
+split.
+**Rationale**: D2 chose SQLite specifically because this was a local-only, single-user tool on a
+machine with no DB server. Once the user asked to actually deploy the app live (reachable by
+URL, not just `localhost`), that constraint changed: Vercel's serverless functions have an
+ephemeral, read-only filesystem, so a local SQLite *file* cannot be the database in production —
+it would reset on every cold start. The natural same-dialect alternative, Turso (hosted
+libSQL/SQLite, which the app's existing `@prisma/adapter-libsql` code already supported), turned
+out to require WSL on Windows to install its CLI — a much bigger, more invasive local-machine
+change than switching database providers. Vercel's own integrated Postgres (Neon-backed,
+provisioned from the same Vercel account/dashboard used for hosting) needed no extra service
+signup. Prisma's `provider` field must match the actual SQL dialect (it can't be conditionally
+sqlite-locally/postgres-in-prod from one schema file), so this is an all-or-nothing switch, not
+an addition.
+**Alternatives considered**: Turso (rejected — WSL requirement on Windows, see above);
+maintaining two separate `schema.prisma` files for local vs. hosted (rejected — real duplication
+for a personal app, violates the project's own scope-discipline rule); installing a local
+Postgres server (rejected — same "no server process to manage" reasoning as D2, now doubly true
+since a hosted instance already exists to point local dev at instead).
+**Consequences**: Local development now requires network access to the hosted Postgres instance
+(already true for this session — internet access was confirmed working). There is currently no
+separate dev/prod database — local dev and the live deployment share one Postgres instance,
+which is an acceptable simplification for a single-user personal tool but worth revisiting (e.g.
+a Neon branch for local dev) if this is ever used more heavily. `dev.db` (the old local SQLite
+file) is obsolete and gitignored; not deleted, just unused.
+
 ### D7 — Modular monolith, not microservices
 **Decision**: Single Next.js app; Server Actions/Route Handlers for mutations; no separate
 backend service, queue, or job runner process.
