@@ -135,13 +135,15 @@
       "id": "morning-briefing-generation",
       "milestone": "M8",
       "description": "Morning briefing summarizes today's meetings/tasks/deadlines/follow-ups and names one recommended focus, grounded in real data",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser on Dashboard: correct meeting count/time, prep note, critical project with reason, and primary focus with rationale, 2026-09-21"
     },
     {
       "id": "weekly-review-generation",
       "milestone": "M8",
       "description": "Weekly review lists completed work, overdue items, new risks, and next week's deadlines from real data",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser at /review: completed/overdue/waiting/risks/decisions/next-week all correctly populated from seed data, 2026-09-21"
     },
     {
       "id": "search-cross-entity",

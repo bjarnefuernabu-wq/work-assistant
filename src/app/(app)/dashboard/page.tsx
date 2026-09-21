@@ -8,6 +8,7 @@ import { TaskRow } from "@/components/tasks/task-row";
 import { formatDate, formatDateTime, formatMinutes, formatTime } from "@/lib/utils/format";
 import { waitingItemAgeDays } from "@/lib/dashboard/scoring";
 import { cn } from "@/lib/utils/cn";
+import { MorningBriefingPanel } from "@/components/dashboard/morning-briefing";
 
 export default async function DashboardPage() {
   const user = await requireUser();
@@ -22,6 +23,8 @@ export default async function DashboardPage() {
           {formatDate(new Date())} — {today.overdueTasks.length > 0 ? `${today.overdueTasks.length} overdue` : "nothing overdue"}
         </p>
       </div>
+
+      <MorningBriefingPanel />
 
       {/* -------------------------------------------------------------- */}
       <section>

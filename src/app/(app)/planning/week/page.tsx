@@ -7,6 +7,7 @@ import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { formatMinutes } from "@/lib/utils/format";
 import { ApplyWeekPlanButton } from "./apply-button";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 
 export default async function WeeklyPlanPage({
@@ -36,6 +37,11 @@ export default async function WeeklyPlanPage({
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link href="/review">
+            <Button variant="ghost" size="sm">
+              Weekly review
+            </Button>
+          </Link>
           <Link href={`/planning/week?week=${format(addDays(weekStart, -7), "yyyy-MM-dd")}`}>
             <button className="rounded-md border border-border p-1.5 text-muted hover:text-foreground">
               <ChevronLeft className="h-4 w-4" />

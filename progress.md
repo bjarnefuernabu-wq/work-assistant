@@ -110,7 +110,16 @@ terminal opened after the installs won't need this.
       from the server action, so the confirmation dialog showed "Re:" instead of "Re: AV setup
       requirements" — fixed by returning `subject` from `generateDraftAction` instead of
       hardcoding it client-side.
-- [ ] **M8 — Briefings**: not started.
+- [x] **M8 — Briefings**: `src/lib/briefing/morning.ts` and `weekly-review.ts` are deterministic
+      (no LLM call) — deliberate, since a briefing is exactly the output where inventing
+      anything is worse than a plainer, reliable one (core principle #1). Morning Briefing is a
+      dismissible panel at the top of the Dashboard (on-demand, not auto-run): meetings today,
+      due count, follow-ups due, critical-project count, prep-needed list, and a "recommended
+      primary focus" (highest-urgency open item, or the top critical-attention project if
+      nothing's scheduled) with its reason shown. Weekly Review (`/review`, linked from
+      `/planning/week`): completed-this-week, overdue, waiting-on-others, new risks/decisions
+      from the last 7 days, next week's deadlines/meetings, and suggested priorities (reusing
+      the urgency scorer). Verified in-browser against seed data — both grounded, both concise.
 - [ ] **M9 — Hardening**: not started.
 
 ## Key decisions this session (full rationale in ARCHITECTURE.md)
@@ -128,12 +137,11 @@ terminal opened after the installs won't need this.
 
 ## Immediate next steps (pick up here)
 
-1. M8 — Morning briefing / weekly review generation.
-2. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
-3. Search (`/search`) and Activity log (`/activity`) pages — still 404 gaps; nav already links
+1. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
+2. Search (`/search`) and Activity log (`/activity`) pages — still 404 gaps; nav already links
    to them.
-4. M9 — hardening pass: tests, remaining edge/empty/error states, re-review confirmation
-   coverage across all write paths.
+3. M9 — hardening pass: automated tests, remaining edge/empty/error states, re-review
+   confirmation coverage across all write paths.
 6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
    placeholder-free gaps; nav links to them already exist and currently 404.
 
