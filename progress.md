@@ -135,13 +135,32 @@ terminal opened after the installs won't need this.
   `ANTHROPIC_API_KEY` (D6) — assistant features work out of the box, just not "real LLM" quality,
   until a key is added in Settings/`.env.local`.
 
+All nav-linked pages now exist and are functional (21 routes) — Dashboard, Projects, Tasks,
+Inbox, Calendar, Daily/Weekly Planning, Weekly Review, Email Assistant, Waiting For, AI
+Assistant, Search, Activity Log, Settings. Every application area in PRODUCT_SPEC.md §3 has a
+real, working page against real seeded data; nothing 404s from the sidebar anymore.
+
+- **Inbox** (`/inbox`): manual capture form, triage list showing AI classification suggestions
+  with their reason (`suggestedReason`), "Convert to task" (uses the suggested project when
+  present) and "Dismiss". Verified in-browser: converting the seeded "email about power
+  requirements" item created a task correctly linked to Outdoor Action Day.
+- **Search** (`/search`): cross-entity search (`src/lib/search/global-search.ts`) over
+  Project/Task/Contact/Note/Decision/EmailThread/CalendarEvent, grouped by type with context
+  per result. Verified in-browser: "Lisa" correctly returned her Contact and the meeting
+  mentioning her.
+- **Activity Log** (`/activity`): last 100 `ActivityLogEntry` rows, newest first. Verified
+  in-browser showing a real mixed history (login, inbox conversion, connector syncs, task
+  completions, project creation) — confirms the audit trail has been live and correct
+  throughout the session, not just for one feature.
+
 ## Immediate next steps (pick up here)
 
-1. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
-2. Search (`/search`) and Activity log (`/activity`) pages — still 404 gaps; nav already links
-   to them.
-3. M9 — hardening pass: automated tests, remaining edge/empty/error states, re-review
-   confirmation coverage across all write paths.
+M9 — hardening pass: automated tests (Vitest is installed but no test files exist yet — the
+planning generators in `src/lib/planning/` and the scoring logic in
+`src/lib/dashboard/scoring.ts` are pure functions and the highest-value first targets), remaining
+edge/empty/error states, a fresh re-read of every write path against the confirmation rules in
+PRODUCT_SPEC.md §20 now that all features exist, and a first-time-user pass (no demo data) to
+check empty states end to end.
 6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
    placeholder-free gaps; nav links to them already exist and currently 404.
 

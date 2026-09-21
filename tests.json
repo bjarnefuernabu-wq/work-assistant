@@ -149,7 +149,15 @@
       "id": "search-cross-entity",
       "milestone": "M9",
       "description": "Global search returns grouped results across projects/tasks/contacts/notes with match context",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser: query 'Lisa' returned grouped Contact + Meeting results, 2026-09-21"
+    },
+    {
+      "id": "inbox-triage",
+      "milestone": "M2",
+      "description": "Converting an inbox item to a task creates a real task, using the suggested project link if present",
+      "status": "passing",
+      "verified": "in-browser: converted seeded AI-suggested inbox item, task appeared under Outdoor Action Day in Tasks, 2026-09-21"
     },
     {
       "id": "activity-log-no-sensitive-content",
