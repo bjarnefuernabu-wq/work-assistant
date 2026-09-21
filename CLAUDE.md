@@ -43,6 +43,15 @@ conversational memory for architectural state — it's written down.
 - Money/JSON-ish list fields on SQLite models are stored as `*Json` string columns (no native
   array/enum-of-arrays support) — always go through the typed helpers in `src/lib/db/*-fields.ts`
   rather than `JSON.parse`/`stringify` ad hoc at call sites.
+- **Every user-facing string goes through `t()` (see ARCHITECTURE.md D9)** — the app supports
+  English/German and the English literal you write IS the translation key. In a Server
+  Component, get it from `const { user, t } = await requireUserT()`
+  (`src/lib/i18n/server.ts`). In a Client Component, `const { t } = useTranslation()`
+  (`@/components/i18n/locale-provider`). Add the German translation to `src/lib/i18n/de.ts` in
+  the same change — a string used via `t(...)` with no entry there silently renders in English,
+  which is easy to miss without a deliberate look. Exceptions (deliberately never translated):
+  user/contact-authored content (task titles, email bodies, contact names), and historical
+  `ActivityLogEntry`/`AIActionLog` summary strings already written to the DB.
 
 ## Windows dev environment note
 

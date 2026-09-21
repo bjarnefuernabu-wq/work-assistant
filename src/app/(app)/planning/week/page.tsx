@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { addDays, format, startOfWeek } from "date-fns";
+import { de as deLocale } from "date-fns/locale";
 import { AlertTriangle, ChevronLeft, ChevronRight } from "lucide-react";
-import { requireUser } from "@/lib/auth/session";
 import { computeWeeklyPlanPreview } from "@/lib/actions/planning";
 import { Panel } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,9 @@ import { formatMinutes } from "@/lib/utils/format";
 import { ApplyWeekPlanButton } from "./apply-button";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { requireUserT } from "@/lib/i18n/server";
+import { isLocale } from "@/lib/i18n/translate";
+import { PRIORITY_OPTIONS } from "@/lib/constants";
 
 export default async function WeeklyPlanPage({
   searchParams,
@@ -16,30 +19,36 @@ export default async function WeeklyPlanPage({
   searchParams: Promise<{ week?: string }>;
 }) {
   const { week } = await searchParams;
-  await requireUser();
+  const { user, t } = await requireUserT();
+  const locale = isLocale(user.locale) ? user.locale : "en";
+  const dateFnsLocale = locale === "de" ? deLocale : undefined;
   const weekStart = startOfWeek(week ? new Date(week) : new Date(), { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, "yyyy-MM-dd");
 
   const plan = await computeWeeklyPlanPreview(weekStartStr);
   const hasNewAssignments = plan.proposedAssignments.length > 0;
+  const priorityLabel = (p: string) => t(PRIORITY_OPTIONS.find((o) => o.value === p)?.label ?? p);
 
   return (
     <div className="p-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-foreground">
-            Week of {format(weekStart, "MMM d")} – {format(addDays(weekStart, 4), "MMM d")}
+            {t("Week of {start} – {end}", {
+              start: format(weekStart, "MMM d", { locale: dateFnsLocale }),
+              end: format(addDays(weekStart, 4), "MMM d", { locale: dateFnsLocale }),
+            })}
           </h1>
           <p className="text-sm text-muted">
             {hasNewAssignments
-              ? `Proposed: ${plan.proposedAssignments.length} unplanned task(s) fit into open capacity this week.`
-              : "All open tasks are already planned or don't fit this week."}
+              ? t("Proposed: {n} unplanned task(s) fit into open capacity this week.", { n: plan.proposedAssignments.length })
+              : t("All open tasks are already planned or don't fit this week.")}
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Link href="/review">
             <Button variant="ghost" size="sm">
-              Weekly review
+              {t("Weekly review")}
             </Button>
           </Link>
           <Link href={`/planning/week?week=${format(addDays(weekStart, -7), "yyyy-MM-dd")}`}>
@@ -67,7 +76,7 @@ export default async function WeeklyPlanPage({
                 <Link href={`/tasks/${r.taskId}`} className="font-medium hover:underline">
                   {r.title}
                 </Link>{" "}
-                — due {format(r.dueDate, "MMM d")}. {r.reason}
+                {t("— due {date}. {reason}", { date: format(r.dueDate, "MMM d", { locale: dateFnsLocale }), reason: r.reason })}
               </span>
             </div>
           ))}
@@ -80,7 +89,7 @@ export default async function WeeklyPlanPage({
                   <Link href={`/tasks/${u.taskId}`} className="font-medium hover:underline">
                     {u.title}
                   </Link>{" "}
-                  ({u.priority}) doesn&apos;t fit anywhere in this week&apos;s open capacity.
+                  {t("({priority}) doesn't fit anywhere in this week's open capacity.", { priority: priorityLabel(u.priority) })}
                 </span>
               </div>
             ))}
@@ -92,41 +101,41 @@ export default async function WeeklyPlanPage({
           <Panel
             key={day.date.toISOString()}
             className={cn(day.overloaded && "border-critical/40")}
-            title={format(day.date, "EEE d")}
+            title={format(day.date, "EEE d", { locale: dateFnsLocale })}
           >
             <div className="px-3.5 py-2.5">
               <div className="mb-2 flex items-center justify-between text-[11px]">
                 <span className={cn("text-muted", day.overloaded && "font-medium text-critical")}>
                   {formatMinutes(day.committedMinutes)} / {formatMinutes(day.capacityMinutes)}
                 </span>
-                {day.overloaded && <Badge tone="critical">Overloaded</Badge>}
+                {day.overloaded && <Badge tone="critical">{t("Overloaded")}</Badge>}
               </div>
               <div className="space-y-1">
                 {day.meetingMinutes > 0 && (
                   <div className="rounded border border-border bg-surface-raised px-2 py-1 text-[11px] text-muted">
-                    {formatMinutes(day.meetingMinutes)} meetings
+                    {t("{n} meetings", { n: formatMinutes(day.meetingMinutes) })}
                   </div>
                 )}
-                {day.alreadyPlanned.map((t) => (
+                {day.alreadyPlanned.map((t2) => (
                   <Link
-                    key={t.taskId}
-                    href={`/tasks/${t.taskId}`}
+                    key={t2.taskId}
+                    href={`/tasks/${t2.taskId}`}
                     className="block truncate rounded border border-border px-2 py-1 text-[11px] text-foreground hover:border-accent"
                   >
-                    {t.title}
+                    {t2.title}
                   </Link>
                 ))}
-                {day.newlyAssigned.map((t) => (
+                {day.newlyAssigned.map((t2) => (
                   <Link
-                    key={t.taskId}
-                    href={`/tasks/${t.taskId}`}
+                    key={t2.taskId}
+                    href={`/tasks/${t2.taskId}`}
                     className="block truncate rounded border border-accent/30 bg-accent/5 px-2 py-1 text-[11px] text-accent hover:border-accent"
                   >
-                    {t.title}
+                    {t2.title}
                   </Link>
                 ))}
                 {day.alreadyPlanned.length === 0 && day.newlyAssigned.length === 0 && day.meetingMinutes === 0 && (
-                  <p className="px-2 py-1 text-[11px] text-subtle">Nothing planned</p>
+                  <p className="px-2 py-1 text-[11px] text-subtle">{t("Nothing planned")}</p>
                 )}
               </div>
             </div>

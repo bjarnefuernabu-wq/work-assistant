@@ -201,3 +201,13 @@ never silently overwritten.
 Real OAuth integrations beyond the interfaces/mocks, a full Gantt view (timeline is built so one
 can be added later without a data model rewrite), multi-user/team features, mobile apps (the web
 UI is responsive), notifications/push.
+
+## 22. Localization and account management
+
+The interface supports English and German, switchable per-user from Settings → Language
+(persisted on the user record) and, before login, from a toggle on the sign-in page. Every
+UI-chrome string is localized; user-authored content (task/project titles, contact names, email
+bodies) and historical activity-log entries are never auto-translated. Settings → Account lets
+the user change their email address and password, each requiring the current password as
+confirmation before the change is applied — the same "verify before consequential change"
+posture as the rest of the app's write paths.

@@ -2,7 +2,12 @@ import { z } from "zod";
 import { prisma } from "@/lib/db/client";
 import { sortByUrgency, waitingItemAgeDays } from "@/lib/dashboard/scoring";
 import { getDashboardData } from "@/lib/dashboard/data";
+import { getT } from "@/lib/i18n/translate";
 import type { ToolDefinition } from "@/lib/ai/types";
+
+// Tool results feed the model (or the mock formatter), never rendered as UI chrome directly, so
+// these use the English dictionary regardless of the user's UI locale.
+const toolT = getT("en");
 
 function defineTool<TInput, TOutput>(def: ToolDefinition<TInput, TOutput>) {
   return def;
@@ -110,7 +115,7 @@ export const getTodayTasksTool = defineTool({
   requiresConfirmation: false,
   inputSchema: z.object({}),
   async run(_input, ctx) {
-    const data = await getDashboardData(ctx.userId);
+    const data = await getDashboardData(ctx.userId, toolT);
     return { today: data.today, attention: data.attention };
   },
 });
@@ -122,7 +127,7 @@ export const getWeekContextTool = defineTool({
   requiresConfirmation: false,
   inputSchema: z.object({}),
   async run(_input, ctx) {
-    const data = await getDashboardData(ctx.userId);
+    const data = await getDashboardData(ctx.userId, toolT);
     return { week: data.week };
   },
 });

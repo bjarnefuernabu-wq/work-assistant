@@ -2,6 +2,7 @@ import "server-only";
 import { addDays, endOfDay, endOfWeek, startOfDay, startOfWeek } from "date-fns";
 import { prisma } from "@/lib/db/client";
 import { waitingItemAgeDays } from "@/lib/dashboard/scoring";
+import type { TranslateFn } from "@/lib/i18n/translate";
 
 export interface AttentionItem {
   projectId: string;
@@ -15,7 +16,7 @@ export interface AttentionItem {
   recommendation: string;
 }
 
-export async function getDashboardData(userId: string) {
+export async function getDashboardData(userId: string, t: TranslateFn) {
   const now = new Date();
   const todayStart = startOfDay(now);
   const todayEnd = endOfDay(now);
@@ -100,7 +101,13 @@ export async function getDashboardData(userId: string) {
     if (oldestWaiting) {
       const age = waitingItemAgeDays(oldestWaiting.since, now);
       if (age >= 5) {
-        facts.push(`Waiting on "${oldestWaiting.title}" (${oldestWaiting.contact?.name ?? "unknown"}) for ${age} days`);
+        facts.push(
+          t('Waiting on "{title}" ({contact}) for {age} days', {
+            title: oldestWaiting.title,
+            contact: oldestWaiting.contact?.name ?? t("unknown"),
+            age,
+          }),
+        );
         if (age >= 7) severity = "critical";
       }
     }
@@ -108,10 +115,14 @@ export async function getDashboardData(userId: string) {
     const projectOverdue = overdueTasks.filter((t) => t.projectId === project.id);
     if (projectOverdue.length > 0) {
       facts.push(
-        `${projectOverdue.length} overdue task${projectOverdue.length > 1 ? "s" : ""}: ${projectOverdue
-          .slice(0, 2)
-          .map((t) => t.title)
-          .join(", ")}${projectOverdue.length > 2 ? ", …" : ""}`,
+        t("{n} overdue task(s): {list}{more}", {
+          n: projectOverdue.length,
+          list: projectOverdue
+            .slice(0, 2)
+            .map((t) => t.title)
+            .join(", "),
+          more: projectOverdue.length > 2 ? ", …" : "",
+        }),
       );
       severity = "critical";
     }
@@ -123,7 +134,12 @@ export async function getDashboardData(userId: string) {
     if (nearMilestone) {
       const remainingMinutes = openProjectTasks.reduce((sum, t) => sum + (t.estimatedDuration ?? 0), 0);
       facts.push(
-        `Milestone "${nearMilestone.title}" due ${new Date(nearMilestone.targetDate).toLocaleDateString()}, ${openProjectTasks.length} open task(s)${remainingMinutes ? ` (~${Math.round(remainingMinutes / 60)}h estimated)` : ""}`,
+        t('Milestone "{title}" due {date}, {n} open task(s){estimate}', {
+          title: nearMilestone.title,
+          date: new Date(nearMilestone.targetDate).toLocaleDateString(),
+          n: openProjectTasks.length,
+          estimate: remainingMinutes ? t(" (~{h}h estimated)", { h: Math.round(remainingMinutes / 60) }) : "",
+        }),
       );
       severity = "critical";
     }
@@ -131,12 +147,15 @@ export async function getDashboardData(userId: string) {
     const projectMeetingsSoon = meetingsNeedingPrep.filter((e) => e.projectId === project.id);
     if (projectMeetingsSoon.length > 0) {
       facts.push(
-        `Prep needed for "${projectMeetingsSoon[0].title}" on ${new Date(projectMeetingsSoon[0].startTime).toLocaleDateString()}`,
+        t('Prep needed for "{title}" on {date}', {
+          title: projectMeetingsSoon[0].title,
+          date: new Date(projectMeetingsSoon[0].startTime).toLocaleDateString(),
+        }),
       );
     }
 
     if (project.status === "AT_RISK") {
-      facts.push(`Project status is explicitly set to At risk`);
+      facts.push(t("Project status is explicitly set to At risk"));
       severity = "critical";
     }
 
@@ -149,14 +168,14 @@ export async function getDashboardData(userId: string) {
       facts,
       observation:
         severity === "critical"
-          ? "This project has time-critical items that are behind or at risk."
-          : "This project has open items worth checking on soon.",
+          ? t("This project has time-critical items that are behind or at risk.")
+          : t("This project has open items worth checking on soon."),
       recommendation:
         oldestWaiting && waitingItemAgeDays(oldestWaiting.since, now) >= 5
-          ? `Follow up on "${oldestWaiting.title}" directly instead of waiting further.`
+          ? t('Follow up on "{title}" directly instead of waiting further.', { title: oldestWaiting.title })
           : projectOverdue.length > 0
-            ? `Reschedule or complete the overdue task(s) first.`
-            : `Review open tasks against the upcoming milestone.`,
+            ? t("Reschedule or complete the overdue task(s) first.")
+            : t("Review open tasks against the upcoming milestone."),
     });
   }
 

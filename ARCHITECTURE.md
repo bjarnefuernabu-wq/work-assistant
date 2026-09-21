@@ -120,6 +120,31 @@ without fresh, explicit consent (a built-in safety gate, not project-specific) �
 manual syncs, zero duplicate rows). A real provider's connector implementation must supply a
 stable `externalId` from the upstream API for this to hold.
 
+### D9 — Custom flat-key i18n instead of a library (next-intl, etc.)
+**Decision**: `src/lib/i18n/translate.ts` — `translate(locale, "English source string", vars?)`
+looks the English string up in `src/lib/i18n/de.ts` (a plain `Record<string,string>`) and falls
+back to the English string itself if missing or if `locale === "en"`. No routing-based locale
+(`/en/...`, `/de/...`), no ICU message format, no build step.
+**Rationale**: This app is Next.js 16, a very recent major version with real breaking changes
+from what a library like next-intl was built/tested against (see D4's Cache Components
+discussion) — pulling in a routing-integrated i18n library risks fighting the framework instead
+of the actual problem. The user's ask ("add the ability to switch to German") doesn't need
+locale-prefixed URLs, SSR-safe ICU pluralization, or namespaced JSON files — it needs a language
+toggle. A flat dictionary keyed by the English source string means most call sites read as
+`t("Save changes")`, which is self-documenting, and a missing translation degrades to English
+rather than crashing or showing a raw key like `settings.account.save_button`.
+**Alternatives considered**: next-intl / react-i18next (rejected — routing/App-Router
+integration risk against a two-week-old major Next version, and namespaced-key files are more
+ceremony than this app's scope needs); per-locale JSON files with nested keys (rejected — same
+self-documentation loss, no benefit at this size).
+**Consequences**: Adding a third language means adding a third dictionary file and a lookup
+branch in `translate()` — cheap. Every literal UI string needs an explicit `t(...)` call; there's
+no automated extraction, so new untranslated strings are a manual-review risk (mitigated once by
+a dedicated coverage-sweep agent pass after the initial translation, documented in progress.md).
+Interpolation uses `{varName}` placeholders with a plain `.replaceAll`, not ICU plurals — fine
+for this app's register (short, action-oriented UI copy), would need revisiting for a language
+with real grammatical plural rules beyond German's.
+
 ### D7 — Modular monolith, not microservices
 **Decision**: Single Next.js app; Server Actions/Route Handlers for mutations; no separate
 backend service, queue, or job runner process.

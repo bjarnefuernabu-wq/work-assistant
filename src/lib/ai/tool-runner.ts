@@ -46,7 +46,7 @@ export async function executeToolCall(
   }
 
   if (tool.requiresConfirmation) {
-    const description = tool.describeCall?.(parsed.data) ?? `Run ${toolName}`;
+    const description = tool.describeCall?.(parsed.data, ctx) ?? ctx.t("Run {tool}", { tool: toolName });
     const log = await prisma.aIActionLog.create({
       data: {
         userId: ctx.userId,
@@ -64,7 +64,7 @@ export async function executeToolCall(
 
   try {
     const result = await tool.run(parsed.data, ctx);
-    const summary = tool.describeCall?.(parsed.data) ?? `Ran ${toolName}`;
+    const summary = tool.describeCall?.(parsed.data, ctx) ?? ctx.t("Ran {tool}", { tool: toolName });
     await prisma.aIActionLog.create({
       data: {
         userId: ctx.userId,

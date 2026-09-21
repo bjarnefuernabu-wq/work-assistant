@@ -2,6 +2,7 @@
 
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { applyWeeklyPlan } from "@/lib/actions/planning";
+import { useTranslation } from "@/components/i18n/locale-provider";
 
 export function ApplyWeekPlanButton({
   weekStartStr,
@@ -10,12 +11,13 @@ export function ApplyWeekPlanButton({
   weekStartStr: string;
   assignments: { taskId: string; plannedDate: Date }[];
 }) {
+  const { t } = useTranslation();
   return (
     <ConfirmButton
       variant="secondary"
-      label="Apply this plan"
-      confirmLabel="Confirm & schedule"
-      description={`This will set a planned date on ${assignments.length} task(s) as shown above.`}
+      label={t("Apply this plan")}
+      confirmLabel={t("Confirm & schedule")}
+      description={t("This will set a planned date on {n} task(s) as shown above.", { n: assignments.length })}
       onConfirm={() =>
         applyWeeklyPlan(
           weekStartStr,

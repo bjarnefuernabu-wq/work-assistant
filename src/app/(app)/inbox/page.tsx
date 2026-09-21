@@ -1,11 +1,12 @@
 import { Inbox as InboxIcon, Sparkles } from "lucide-react";
-import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { Panel, EmptyState } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils/format";
 import { TriageActions } from "./triage-actions";
 import { CaptureForm } from "./capture-form";
+import { requireUserT } from "@/lib/i18n/server";
+import { isLocale } from "@/lib/i18n/translate";
 
 const TYPE_LABEL: Record<string, string> = {
   NOTE: "Note",
@@ -17,7 +18,8 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default async function InboxPage() {
-  const user = await requireUser();
+  const { user, t } = await requireUserT();
+  const locale = isLocale(user.locale) ? user.locale : "en";
   const items = await prisma.inboxItem.findMany({
     where: { userId: user.id, status: "NEW" },
     orderBy: { createdAt: "desc" },
@@ -26,21 +28,21 @@ export default async function InboxPage() {
   return (
     <div className="p-6">
       <div className="mb-5">
-        <h1 className="text-lg font-semibold text-foreground">Inbox</h1>
-        <p className="text-sm text-muted">{items.length} to triage</p>
+        <h1 className="text-lg font-semibold text-foreground">{t("Inbox")}</h1>
+        <p className="text-sm text-muted">{t("{n} to triage", { n: items.length })}</p>
       </div>
 
       <CaptureForm />
 
       {items.length === 0 ? (
-        <EmptyState icon={InboxIcon} title="Inbox zero" description="Nothing waiting to be triaged." />
+        <EmptyState icon={InboxIcon} title={t("Inbox zero")} description={t("Nothing waiting to be triaged.")} />
       ) : (
         <Panel>
           {items.map((item) => (
             <div key={item.id} className="flex items-start gap-3 border-b border-border px-4 py-3 last:border-0">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <Badge tone="neutral">{TYPE_LABEL[item.type]}</Badge>
+                  <Badge tone="neutral">{t(TYPE_LABEL[item.type])}</Badge>
                   <span className="text-sm font-medium text-foreground">{item.title}</span>
                 </div>
                 {item.content && <p className="mt-1 text-xs text-muted">{item.content}</p>}
@@ -50,7 +52,7 @@ export default async function InboxPage() {
                     {item.suggestedReason}
                   </p>
                 )}
-                <p className="mt-1 text-[11px] text-subtle">{formatDate(item.createdAt)}</p>
+                <p className="mt-1 text-[11px] text-subtle">{formatDate(item.createdAt, locale)}</p>
               </div>
               <TriageActions itemId={item.id} />
             </div>

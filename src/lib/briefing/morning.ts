@@ -1,6 +1,7 @@
 import "server-only";
 import { getDashboardData } from "@/lib/dashboard/data";
 import { sortByUrgency } from "@/lib/dashboard/scoring";
+import type { TranslateFn } from "@/lib/i18n/translate";
 
 export interface MorningBriefing {
   generatedAt: Date;
@@ -19,8 +20,8 @@ export interface MorningBriefing {
  * kind of output where inventing anything is worse than a plainer, reliable summary. See
  * PRODUCT_SPEC.md §"Morning Briefing" and core principle #1.
  */
-export async function buildMorningBriefing(userId: string): Promise<MorningBriefing> {
-  const data = await getDashboardData(userId);
+export async function buildMorningBriefing(userId: string, t: TranslateFn): Promise<MorningBriefing> {
+  const data = await getDashboardData(userId, t);
   const { today, attention } = data;
 
   const importantTasks = sortByUrgency([...today.overdueTasks, ...today.dueTasks, ...today.plannedTasks])
@@ -44,7 +45,7 @@ export async function buildMorningBriefing(userId: string): Promise<MorningBrief
       .map((a) => ({ id: a.projectId, name: a.projectName, reason: a.facts[0] })),
     prepNeeded: today.meetingsNeedingPrep.map((e) => ({ title: e.title, time: e.startTime, notes: e.prepNotes })),
     primaryFocus: primary
-      ? { id: primary.id, title: primary.title, reason: "Highest-urgency open item today (priority + due date)." }
+      ? { id: primary.id, title: primary.title, reason: t("Highest-urgency open item today (priority + due date).") }
       : criticalAttention
         ? { id: criticalAttention.projectId, title: criticalAttention.projectName, reason: criticalAttention.observation }
         : undefined,

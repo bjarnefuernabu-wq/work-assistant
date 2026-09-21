@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PALETTE_ACTIONS } from "./actions";
 import { cn } from "@/lib/utils/cn";
+import { useTranslation } from "@/components/i18n/locale-provider";
 
 export function CommandPalette({
   open,
@@ -16,6 +17,7 @@ export function CommandPalette({
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevOpen, setPrevOpen] = useState(open);
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Reset the query/selection when the palette transitions to open. Adjusting state during
   // render (React's recommended pattern) instead of an effect, since this must happen
@@ -47,10 +49,12 @@ export function CommandPalette({
     return PALETTE_ACTIONS.filter(
       (a) =>
         a.label.toLowerCase().includes(q) ||
+        t(a.label).toLowerCase().includes(q) ||
         a.group.toLowerCase().includes(q) ||
+        t(a.group).toLowerCase().includes(q) ||
         a.keywords?.toLowerCase().includes(q),
     );
-  }, [query]);
+  }, [query, t]);
 
   function execute(index: number) {
     const action = results[index];
@@ -89,12 +93,12 @@ export function CommandPalette({
               execute(activeIndex);
             }
           }}
-          placeholder="Type a command or search…"
+          placeholder={t("Type a command or search…")}
           className="w-full border-b border-border bg-transparent px-4 py-3 text-sm text-foreground placeholder:text-subtle focus:outline-none"
         />
         <div className="max-h-80 overflow-y-auto p-1.5">
           {results.length === 0 && (
-            <div className="px-3 py-6 text-center text-xs text-subtle">No matches</div>
+            <div className="px-3 py-6 text-center text-xs text-subtle">{t("No matches")}</div>
           )}
           {results.map((action, i) => {
             const Icon = action.icon;
@@ -109,8 +113,8 @@ export function CommandPalette({
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} />
-                <span>{action.label}</span>
-                <span className="ml-auto text-[10px] text-subtle">{action.group}</span>
+                <span>{t(action.label)}</span>
+                <span className="ml-auto text-[10px] text-subtle">{t(action.group)}</span>
               </button>
             );
           })}

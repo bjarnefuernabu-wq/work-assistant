@@ -1,5 +1,6 @@
 import { addDays, isAfter, isBefore, startOfDay } from "date-fns";
 import type { CalendarEvent, Priority, Task } from "@/generated/prisma/client";
+import type { TranslateFn } from "@/lib/i18n/translate";
 
 const DAILY_TARGET_FRACTION = 0.75;
 const DEFAULT_TASK_MINUTES = 45;
@@ -31,6 +32,7 @@ export function generateWeeklyPlan({
   events,
   openTasks,
   today = new Date(),
+  t = (k) => k,
 }: {
   weekStart: Date;
   workHourStart: number;
@@ -38,6 +40,7 @@ export function generateWeeklyPlan({
   events: CalendarEvent[];
   openTasks: (Task & { project?: { priority: Priority } | null })[];
   today?: Date;
+  t?: TranslateFn;
 }): WeeklyPlanResult {
   const dailyCapacity = (workHourEnd - workHourStart) * 60 * DAILY_TARGET_FRACTION;
   const weekdayDates = [0, 1, 2, 3, 4].map((i) => startOfDay(addDays(weekStart, i)));
@@ -116,7 +119,7 @@ export function generateWeeklyPlan({
           taskId: task.id,
           title: task.title,
           dueDate: deadline,
-          reason: "Not enough unbooked time before the due date this week.",
+          reason: t("Not enough unbooked time before the due date this week."),
         });
       }
     }

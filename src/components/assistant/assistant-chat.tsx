@@ -5,8 +5,11 @@ import { Send, Wrench } from "lucide-react";
 import { sendAssistantMessage, confirmAssistantAction, rejectAssistantAction } from "@/lib/actions/assistant";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { useTranslation } from "@/components/i18n/locale-provider";
 import type { ChatMessage } from "@/lib/ai/types";
 
+// The message sent is always English (the offline MockProvider only recognizes English
+// keywords); the button label is translated for display.
 const SUGGESTIONS = [
   "What do I need to do today?",
   "What's critical this week?",
@@ -15,6 +18,7 @@ const SUGGESTIONS = [
 ];
 
 export function AssistantChat({ isLive }: { isLive: boolean }) {
+  const { t } = useTranslation();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<{ id: string; description: string } | null>(null);
@@ -46,7 +50,10 @@ export function AssistantChat({ isLive }: { isLive: boolean }) {
         ...prev,
         {
           role: "assistant",
-          content: outcome.status === "SUCCESS" ? `Done — ${outcome.resultSummary}` : `That failed: ${outcome.resultSummary}`,
+          content:
+            outcome.status === "SUCCESS"
+              ? t("Done — {summary}", { summary: outcome.resultSummary ?? "" })
+              : t("That failed: {summary}", { summary: outcome.resultSummary ?? "" }),
         },
       ]);
     });
@@ -58,7 +65,7 @@ export function AssistantChat({ isLive }: { isLive: boolean }) {
     setPending(null);
     startTransition(async () => {
       await rejectAssistantAction(p.id);
-      setMessages((prev) => [...prev, { role: "assistant", content: "Cancelled — I didn't make that change." }]);
+      setMessages((prev) => [...prev, { role: "assistant", content: t("Cancelled — I didn't make that change.") }]);
     });
   }
 
@@ -66,15 +73,16 @@ export function AssistantChat({ isLive }: { isLive: boolean }) {
     <div className="flex h-full flex-col">
       {!isLive && (
         <div className="border-b border-warning/30 bg-warning/5 px-4 py-2 text-xs text-warning">
-          Running in offline fallback mode (no ANTHROPIC_API_KEY set) — answers only cover a few
-          question types. Add a key in Settings for full assistant capability.
+          {t(
+            "Running in offline fallback mode (no ANTHROPIC_API_KEY set) — answers only cover a few question types. Add a key in Settings for full assistant capability.",
+          )}
         </div>
       )}
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {messages.length === 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-subtle">Try asking:</p>
+            <p className="text-xs text-subtle">{t("Try asking:")}</p>
             <div className="flex flex-wrap gap-2">
               {SUGGESTIONS.map((s) => (
                 <button
@@ -82,7 +90,7 @@ export function AssistantChat({ isLive }: { isLive: boolean }) {
                   onClick={() => send(s)}
                   className="rounded-full border border-border px-3 py-1.5 text-xs text-muted hover:border-accent hover:text-foreground"
                 >
-                  {s}
+                  {t(s)}
                 </button>
               ))}
             </div>
@@ -94,7 +102,7 @@ export function AssistantChat({ isLive }: { isLive: boolean }) {
           if (m.role === "assistant" && m.toolCallId) {
             return (
               <div key={i} className="flex items-center gap-1.5 text-[11px] text-subtle">
-                <Wrench className="h-3 w-3" /> checking {m.toolName}…
+                <Wrench className="h-3 w-3" /> {t("checking {tool}…", { tool: m.toolName ?? "" })}
               </div>
             );
           }
@@ -115,20 +123,20 @@ export function AssistantChat({ isLive }: { isLive: boolean }) {
         {pending && (
           <div className="rounded-lg border border-warning/30 bg-warning/5 px-3.5 py-2.5">
             <p className="mb-2 text-xs text-foreground">
-              <span className="font-semibold text-warning">Confirmation needed:</span> {pending.description}
+              <span className="font-semibold text-warning">{t("Confirmation needed:")}</span> {pending.description}
             </p>
             <div className="flex gap-2">
               <Button size="sm" variant="primary" onClick={confirm} disabled={isSending}>
-                Confirm
+                {t("Confirm")}
               </Button>
               <Button size="sm" variant="ghost" onClick={cancel} disabled={isSending}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </div>
           </div>
         )}
 
-        {isSending && !pending && <p className="text-xs text-subtle">Thinking…</p>}
+        {isSending && !pending && <p className="text-xs text-subtle">{t("Thinking…")}</p>}
         <div ref={bottomRef} />
       </div>
 
@@ -142,7 +150,7 @@ export function AssistantChat({ isLive }: { isLive: boolean }) {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about your projects, tasks, or week…"
+          placeholder={t("Ask about your projects, tasks, or week…")}
           className="h-9 flex-1 rounded-md border border-border bg-surface-raised px-3 text-sm text-foreground placeholder:text-subtle focus:border-accent focus:outline-none"
         />
         <Button type="submit" variant="primary" disabled={isSending || !input.trim()}>

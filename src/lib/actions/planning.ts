@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { endOfDay, startOfDay } from "date-fns";
 import { prisma } from "@/lib/db/client";
 import { requireUser } from "@/lib/auth/session";
+import { requireUserT } from "@/lib/i18n/server";
 import { logActivity } from "@/lib/activity/log";
 import { generateDailyPlan } from "@/lib/planning/generate-daily";
 import { generateWeeklyPlan, type WeeklyPlanResult } from "@/lib/planning/generate-weekly";
@@ -98,7 +99,7 @@ export async function deleteDailyPlanBlock(blockId: string) {
 }
 
 export async function computeWeeklyPlanPreview(weekStartStr: string): Promise<WeeklyPlanResult> {
-  const user = await requireUser();
+  const { user, t } = await requireUserT();
   const weekStart = startOfDay(new Date(weekStartStr));
   const weekEnd = endOfDay(new Date(weekStart.getTime() + 6 * 86_400_000));
 
@@ -116,6 +117,7 @@ export async function computeWeeklyPlanPreview(weekStartStr: string): Promise<We
     workHourEnd: user.workHourEnd,
     events,
     openTasks: tasks,
+    t,
   });
 }
 

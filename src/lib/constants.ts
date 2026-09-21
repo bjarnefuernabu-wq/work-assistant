@@ -30,6 +30,16 @@ export const RISK_LEVEL_OPTIONS: { value: RiskLevel; label: string }[] = [
   { value: "HIGH", label: "High" },
 ];
 
+export const PROJECT_STATUS_LABEL: Record<ProjectStatus, string> = {
+  ACTIVE: "Active",
+  ON_HOLD: "On hold",
+  AT_RISK: "At risk",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
+export const RISK_LEVEL_LABEL: Record<RiskLevel, string> = { LOW: "Low", MEDIUM: "Medium", HIGH: "High" };
+
 export const PROJECT_STATUS_TONE: Record<ProjectStatus, "neutral" | "accent" | "critical" | "warning" | "ok"> = {
   ACTIVE: "accent",
   ON_HOLD: "neutral",

@@ -1,7 +1,9 @@
 import type { z } from "zod";
+import type { TranslateFn } from "@/lib/i18n/translate";
 
 export interface ToolContext {
   userId: string;
+  t: TranslateFn;
 }
 
 export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
@@ -19,7 +21,7 @@ export interface ToolDefinition<TInput = unknown, TOutput = unknown> {
    */
   requiresConfirmation: boolean;
   /** A one-line human-readable description of what THIS call would do, for the confirmation UI. */
-  describeCall?: (input: TInput) => string;
+  describeCall?: (input: TInput, ctx: ToolContext) => string;
   run: (input: TInput, ctx: ToolContext) => Promise<TOutput>;
 }
 

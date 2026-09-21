@@ -1,14 +1,16 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { Panel } from "@/components/ui/panel";
 import { formatDateTime } from "@/lib/utils/format";
 import { EmailAssistantPanel } from "./assistant-panel";
+import { requireUserT } from "@/lib/i18n/server";
+import { isLocale } from "@/lib/i18n/translate";
 
 export default async function EmailThreadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await requireUser();
+  const { user } = await requireUserT();
+  const locale = isLocale(user.locale) ? user.locale : "en";
   const thread = await prisma.emailThread.findFirst({
     where: { id, userId: user.id },
     include: {
@@ -35,7 +37,7 @@ export default async function EmailThreadPage({ params }: { params: Promise<{ id
             <div key={m.id} className="border-b border-border px-4 py-3 last:border-0">
               <div className="mb-1 flex items-center justify-between">
                 <span className="text-sm font-medium text-foreground">{m.fromName ?? m.fromAddress}</span>
-                <span className="text-xs text-subtle">{formatDateTime(m.sentAt)}</span>
+                <span className="text-xs text-subtle">{formatDateTime(m.sentAt, locale)}</span>
               </div>
               <p className="text-sm whitespace-pre-wrap text-muted">{m.bodyText}</p>
             </div>

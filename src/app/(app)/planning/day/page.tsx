@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { addDays, format, startOfDay } from "date-fns";
+import { de as deLocale } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
-import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { EmptyState } from "@/components/ui/panel";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,8 @@ import { formatMinutes, formatTime } from "@/lib/utils/format";
 import { GenerateDayButton } from "./generate-button";
 import { DeleteBlockButton } from "./delete-block-button";
 import { cn } from "@/lib/utils/cn";
+import { requireUserT } from "@/lib/i18n/server";
+import { isLocale } from "@/lib/i18n/translate";
 import type { PlanBlockType } from "@/generated/prisma/enums";
 
 const BLOCK_TONE: Record<PlanBlockType, string> = {
@@ -20,13 +22,23 @@ const BLOCK_TONE: Record<PlanBlockType, string> = {
   PREP: "border-warning/30 bg-warning/5",
 };
 
+const BLOCK_LABEL: Record<PlanBlockType, string> = {
+  FOCUS: "FOCUS",
+  MEETING: "MEETING",
+  BUFFER: "BUFFER",
+  TRIAGE: "TRIAGE",
+  FOLLOWUP: "FOLLOWUP",
+  PREP: "PREP",
+};
+
 export default async function DailyPlanPage({
   searchParams,
 }: {
   searchParams: Promise<{ date?: string }>;
 }) {
   const { date: dateParam } = await searchParams;
-  const user = await requireUser();
+  const { user, t } = await requireUserT();
+  const locale = isLocale(user.locale) ? user.locale : "en";
   const day = startOfDay(dateParam ? new Date(dateParam) : new Date());
   const dateStr = format(day, "yyyy-MM-dd");
 
@@ -38,14 +50,18 @@ export default async function DailyPlanPage({
   const capacity = plan?.capacityMinutes ?? (user.workHourEnd - user.workHourStart) * 60;
   const planned = plan?.plannedMinutes ?? 0;
   const loadPct = capacity > 0 ? Math.round((planned / capacity) * 100) : 0;
+  const dateFnsLocale = locale === "de" ? deLocale : undefined;
 
   return (
     <div className="p-6">
       <div className="mb-5 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-foreground">{format(day, "EEEE, MMM d")}</h1>
+          <h1 className="text-lg font-semibold text-foreground">{format(day, "EEEE, MMM d", { locale: dateFnsLocale })}</h1>
           <p className="text-sm text-muted">
-            {user.workHourStart}:00–{user.workHourEnd}:00 · {plan ? `${loadPct}% scheduled (~${formatMinutes(planned)} of ~${formatMinutes(capacity)})` : "No plan generated yet"}
+            {user.workHourStart}:00–{user.workHourEnd}:00 ·{" "}
+            {plan
+              ? t("{pct}% scheduled (~{planned} of ~{capacity})", { pct: loadPct, planned: formatMinutes(planned), capacity: formatMinutes(capacity) })
+              : t("No plan generated yet")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -66,11 +82,13 @@ export default async function DailyPlanPage({
       {!plan ? (
         <EmptyState
           icon={Sparkles}
-          title="No plan for this day yet"
-          description="Generate a realistic schedule from your calendar, deadlines, and open tasks — about 70-80% of available time, with buffer left over."
+          title={t("No plan for this day yet")}
+          description={t(
+            "Generate a realistic schedule from your calendar, deadlines, and open tasks — about 70-80% of available time, with buffer left over.",
+          )}
         />
       ) : plan.blocks.length === 0 ? (
-        <EmptyState title="Nothing to schedule" description="No open tasks or events found for this day." />
+        <EmptyState title={t("Nothing to schedule")} description={t("No open tasks or events found for this day.")} />
       ) : (
         <div className="max-w-2xl space-y-1.5">
           {plan.blocks.map((b) => (
@@ -93,7 +111,7 @@ export default async function DailyPlanPage({
                 </p>
                 {b.note && <p className="truncate text-xs text-subtle">{b.note}</p>}
               </div>
-              <Badge tone="neutral">{b.type}</Badge>
+              <Badge tone="neutral">{t(BLOCK_LABEL[b.type])}</Badge>
               {b.type !== "MEETING" && <DeleteBlockButton blockId={b.id} />}
             </div>
           ))}

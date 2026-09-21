@@ -4,6 +4,7 @@ import { getAIProvider } from "@/lib/ai/provider";
 import { ALL_TOOLS } from "@/lib/ai/tools/registry";
 import { executeToolCall } from "@/lib/ai/tool-runner";
 import type { ChatMessage } from "@/lib/ai/types";
+import type { Locale, TranslateFn } from "@/lib/i18n/translate";
 
 const MAX_TOOL_ITERATIONS = 4;
 
@@ -14,15 +15,22 @@ export interface ChatTurnResult {
   pendingConfirmation?: { id: string; description: string; toolName: string };
 }
 
-export async function runChatTurn(userId: string, history: ChatMessage[], userMessage: string): Promise<ChatTurnResult> {
+export async function runChatTurn(
+  userId: string,
+  history: ChatMessage[],
+  userMessage: string,
+  t: TranslateFn,
+  locale: Locale,
+): Promise<ChatTurnResult> {
   const provider = getAIProvider();
   const messages: ChatMessage[] = [...history, { role: "user", content: userMessage }];
+  const system = SYSTEM_PROMPT + (locale === "de" ? " Respond in German." : "");
 
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-    const response = await provider.respond({ system: SYSTEM_PROMPT, messages, tools: ALL_TOOLS });
+    const response = await provider.respond({ system, messages, tools: ALL_TOOLS });
 
     if (response.type === "text") {
-      messages.push({ role: "assistant", content: response.text || "(no response)" });
+      messages.push({ role: "assistant", content: response.text || t("(no response)") });
       return { messages };
     }
 
@@ -35,7 +43,7 @@ export async function runChatTurn(userId: string, history: ChatMessage[], userMe
       toolInput: response.input,
     });
 
-    const outcome = await executeToolCall(response.toolName, response.input, { userId }, userMessage);
+    const outcome = await executeToolCall(response.toolName, response.input, { userId, t }, userMessage);
 
     if (outcome.status === "PENDING_CONFIRMATION") {
       messages.push({
@@ -46,7 +54,9 @@ export async function runChatTurn(userId: string, history: ChatMessage[], userMe
       });
       messages.push({
         role: "assistant",
-        content: `This needs your confirmation before I do it: **${outcome.resultSummary}**. Confirm below to proceed, or tell me to cancel.`,
+        content: t("This needs your confirmation before I do it: **{summary}**. Confirm below to proceed, or tell me to cancel.", {
+          summary: outcome.resultSummary,
+        }),
       });
       return { messages, pendingConfirmation: { id: outcome.pendingActionId!, description: outcome.resultSummary, toolName: outcome.toolName } };
     }
@@ -61,7 +71,7 @@ export async function runChatTurn(userId: string, history: ChatMessage[], userMe
 
   messages.push({
     role: "assistant",
-    content: "I wasn't able to finish that within a reasonable number of steps — try narrowing the request.",
+    content: t("I wasn't able to finish that within a reasonable number of steps — try narrowing the request."),
   });
   return { messages };
 }

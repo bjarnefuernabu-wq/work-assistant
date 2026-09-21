@@ -1,4 +1,3 @@
-import { requireUser } from "@/lib/auth/session";
 import { prisma } from "@/lib/db/client";
 import { getAIProvider } from "@/lib/ai/provider";
 import { Panel } from "@/components/ui/panel";
@@ -6,6 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils/format";
 import { ConnectButton, DisconnectButton, SyncNowButton } from "./connector-actions";
 import { MemorySection } from "./memory-section";
+import { AccountSection } from "./account-section";
+import { LanguageSection } from "./language-section";
+import { requireUserT } from "@/lib/i18n/server";
+import { isLocale } from "@/lib/i18n/translate";
 
 const AVAILABLE_CONNECTORS = [
   { type: "CALENDAR" as const, provider: "mock-calendar", displayName: "Demo Calendar" },
@@ -13,22 +16,33 @@ const AVAILABLE_CONNECTORS = [
 ];
 
 export default async function SettingsPage() {
-  const user = await requireUser();
+  const { user, t } = await requireUserT();
   const [connectors, memoryEntries] = await Promise.all([
     prisma.connector.findMany({ where: { userId: user.id } }),
     prisma.memoryEntry.findMany({ where: { userId: user.id, isVisible: true }, orderBy: { createdAt: "desc" } }),
   ]);
   const provider = getAIProvider();
+  const locale = isLocale(user.locale) ? user.locale : "en";
 
   return (
     <div className="max-w-3xl space-y-6 p-6">
       <div>
-        <h1 className="text-lg font-semibold text-foreground">Settings</h1>
-        <p className="text-sm text-muted">Connectors, AI provider, and assistant memory.</p>
+        <h1 className="text-lg font-semibold text-foreground">{t("Settings")}</h1>
+        <p className="text-sm text-muted">{t("Account, language, connectors, AI provider, and assistant memory.")}</p>
       </div>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-foreground">Connectors</h2>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">{t("Account")}</h2>
+        <AccountSection currentEmail={user.email} />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">{t("Language")}</h2>
+        <LanguageSection current={locale} />
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">{t("Connectors")}</h2>
         <div className="space-y-2">
           {AVAILABLE_CONNECTORS.map((available) => {
             const existing = connectors.find((c) => c.provider === available.provider);
@@ -39,16 +53,16 @@ export default async function SettingsPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">{available.displayName}</span>
                       {!existing || existing.status === "DISCONNECTED" ? (
-                        <Badge tone="neutral">Disconnected</Badge>
+                        <Badge tone="neutral">{t("Disconnected")}</Badge>
                       ) : existing.lastSyncStatus === "ERROR" ? (
-                        <Badge tone="critical">Sync error</Badge>
+                        <Badge tone="critical">{t("Sync error")}</Badge>
                       ) : (
-                        <Badge tone="ok">Connected</Badge>
+                        <Badge tone="ok">{t("Connected")}</Badge>
                       )}
                     </div>
                     <p className="text-xs text-muted">
-                      {available.type === "CALENDAR" ? "Simulated calendar connector" : "Simulated mail connector"}
-                      {existing?.lastSyncedAt && ` · last synced ${formatDateTime(existing.lastSyncedAt)}`}
+                      {available.type === "CALENDAR" ? t("Simulated calendar connector") : t("Simulated mail connector")}
+                      {existing?.lastSyncedAt && ` · ${t("last synced")} ${formatDateTime(existing.lastSyncedAt, locale)}`}
                     </p>
                     {existing?.lastSyncError && <p className="mt-0.5 text-xs text-critical">{existing.lastSyncError}</p>}
                   </div>
@@ -68,25 +82,25 @@ export default async function SettingsPage() {
           })}
         </div>
         <p className="mt-2 text-xs text-subtle">
-          These simulate real calendar/mail providers end-to-end (idempotent sync, disconnect,
-          sync failure states) so the connector architecture is proven without needing a real
-          OAuth app registration. See ARCHITECTURE.md for how a real provider plugs in.
+          {t(
+            "These simulate real calendar/mail providers end-to-end (idempotent sync, disconnect, sync failure states) so the connector architecture is proven without needing a real OAuth app registration. See ARCHITECTURE.md for how a real provider plugs in.",
+          )}
         </p>
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-foreground">AI provider</h2>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">{t("AI provider")}</h2>
         <Panel>
           <div className="flex items-center justify-between px-4 py-3">
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{provider.isLive ? "Anthropic (live)" : "Offline fallback"}</span>
-                <Badge tone={provider.isLive ? "ok" : "warning"}>{provider.isLive ? "Live" : "Mock"}</Badge>
+                <span className="text-sm font-medium text-foreground">{provider.isLive ? t("Anthropic (live)") : t("Offline fallback")}</span>
+                <Badge tone={provider.isLive ? "ok" : "warning"}>{provider.isLive ? t("Live") : t("Mock")}</Badge>
               </div>
               <p className="text-xs text-muted">
                 {provider.isLive
-                  ? "ANTHROPIC_API_KEY is configured — the assistant uses real Claude tool-use."
-                  : "No ANTHROPIC_API_KEY configured. Add one to .env and restart the server to enable full assistant capability."}
+                  ? t("ANTHROPIC_API_KEY is configured — the assistant uses real Claude tool-use.")
+                  : t("No ANTHROPIC_API_KEY configured. Add one to .env and restart the server to enable full assistant capability.")}
               </p>
             </div>
           </div>
@@ -94,10 +108,11 @@ export default async function SettingsPage() {
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-semibold text-foreground">Assistant memory</h2>
+        <h2 className="mb-3 text-sm font-semibold text-foreground">{t("Assistant memory")}</h2>
         <p className="mb-3 text-xs text-muted">
-          What the assistant remembers about your preferences, working patterns, and project
-          context. Fully visible, editable, and deletable — nothing is stored silently.
+          {t(
+            "What the assistant remembers about your preferences, working patterns, and project context. Fully visible, editable, and deletable — nothing is stored silently.",
+          )}
         </p>
         <MemorySection entries={memoryEntries} />
       </section>

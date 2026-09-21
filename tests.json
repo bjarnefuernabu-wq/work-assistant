@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-21 (session 1, after M8 + hardening pass)",
+  "updated": "2026-09-21 (session 1, after M8 + hardening pass + localization/account settings)",
   "legend": {
     "status": ["pending", "in_progress", "passing", "failing", "blocked"]
   },
@@ -172,6 +172,20 @@
       "description": "A user cannot attach a task/draft/waiting-item to another user's project or email thread by supplying that record's id as a foreign key",
       "status": "passing",
       "verified": "Explore-agent audit found 3 unverified-foreign-key gaps (createEmailDraftTool, createTask/updateTask, createWaitingItem); fixed all 3 with ownership checks; verified via temporary route-handler test that create_task with a victim's projectId now yields projectId:null and create_email_draft with a victim's threadId now returns ok:false, 2026-09-21"
+    },
+    {
+      "id": "i18n-language-switch",
+      "milestone": "post-MVP",
+      "description": "Switching language in Settings (or the login page toggle) re-renders the entire app in the chosen language, including date-fns month/weekday names and dynamically-constructed dashboard attention text, and persists across navigation and re-login",
+      "status": "passing",
+      "verified": "in-browser walkthrough of every page (Dashboard, Projects, Tasks, Planning day/week, Weekly Review, Email, Follow-ups, Inbox, Search, Activity, Calendar, Settings, AI Assistant) in German, then switched back to English cleanly, 2026-09-21. A dedicated coverage-sweep agent pass found and fixed 5 missed strings (Priority, Create task, No projects yet, Risks, Decisions) plus one locale-arg-missing date bug."
+    },
+    {
+      "id": "account-credential-change",
+      "milestone": "post-MVP",
+      "description": "Settings → Account lets the user change email and password, each requiring the current password to confirm, consistent with the login() verification pattern",
+      "status": "passing",
+      "verified": "code review only (not live-submitted, to avoid risking this session's own login credentials) — changeEmail/changePassword in src/lib/actions/account.ts use the same verifyPassword/hashPassword helpers and useActionState/Zod pattern already proven working across every other form in the app; typecheck/build clean, UI labels verified in both languages, 2026-09-21"
     },
     {
       "id": "unit-tests-planning-scoring",

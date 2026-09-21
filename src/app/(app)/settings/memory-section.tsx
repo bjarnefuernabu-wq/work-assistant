@@ -5,6 +5,7 @@ import { Trash2, Pencil, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, Textarea } from "@/components/ui/input";
 import { createMemoryEntry, updateMemoryEntry, deleteMemoryEntry, type MemoryFormState } from "@/lib/actions/memory";
+import { useTranslation } from "@/components/i18n/locale-provider";
 import type { MemoryEntry } from "@/generated/prisma/client";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -16,6 +17,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function MemorySection({ entries }: { entries: MemoryEntry[] }) {
+  const { t } = useTranslation();
   const [state, formAction] = useActionState<MemoryFormState, FormData>(createMemoryEntry, undefined);
 
   const byCategory = entries.reduce<Record<string, MemoryEntry[]>>((acc, e) => {
@@ -29,23 +31,23 @@ export function MemorySection({ entries }: { entries: MemoryEntry[] }) {
         <Select name="category" defaultValue="PREFERENCE" className="w-44 shrink-0">
           {Object.entries(CATEGORY_LABELS).map(([v, l]) => (
             <option key={v} value={v}>
-              {l}
+              {t(l)}
             </option>
           ))}
         </Select>
-        <Textarea name="content" rows={1} placeholder="e.g. Monday mornings are for focused work" className="flex-1" required />
+        <Textarea name="content" rows={1} placeholder={t("e.g. Monday mornings are for focused work")} className="flex-1" required />
         <Button type="submit" variant="secondary" size="sm">
-          Add
+          {t("Add")}
         </Button>
       </form>
-      {state?.error && <p className="text-xs text-critical">{state.error}</p>}
+      {state?.error && <p className="text-xs text-critical">{t(state.error)}</p>}
 
       {Object.keys(byCategory).length === 0 ? (
-        <p className="px-1 text-xs text-subtle">No memory entries yet.</p>
+        <p className="px-1 text-xs text-subtle">{t("No memory entries yet.")}</p>
       ) : (
         Object.entries(byCategory).map(([category, items]) => (
           <div key={category}>
-            <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-subtle uppercase">{CATEGORY_LABELS[category]}</p>
+            <p className="mb-1.5 text-[11px] font-semibold tracking-wide text-subtle uppercase">{t(CATEGORY_LABELS[category])}</p>
             <div className="space-y-1.5">
               {items.map((entry) => (
                 <MemoryRow key={entry.id} entry={entry} />

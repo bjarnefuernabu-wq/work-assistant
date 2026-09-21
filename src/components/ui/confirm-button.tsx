@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { useTranslation } from "@/components/i18n/locale-provider";
 
 /**
  * Two-step confirmation for consequential writes (delete project, delete meeting, etc).
@@ -26,6 +27,7 @@ export function ConfirmButton({
 }) {
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
+  const { t } = useTranslation();
 
   if (!confirming) {
     return (
@@ -44,10 +46,10 @@ export function ConfirmButton({
         disabled={pending}
         onClick={() => startTransition(async () => { await onConfirm(); })}
       >
-        {pending ? "Working…" : confirmLabel}
+        {pending ? t("Working…") : confirmLabel}
       </Button>
       <Button variant="ghost" size="sm" onClick={() => setConfirming(false)} disabled={pending}>
-        Cancel
+        {t("Cancel")}
       </Button>
     </div>
   );

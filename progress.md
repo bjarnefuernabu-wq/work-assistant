@@ -1,13 +1,62 @@
 # Progress
 
-Last updated: 2026-09-21 (session 1, end of session — M1-M8 complete, M9 hardening in progress).
+Last updated: 2026-09-21 (session 1, end of session — M1-M8 complete, M9 hardening in progress,
+plus a post-MVP localization + account-settings pass).
 
 **tl;dr for picking this up next session**: the app is a real, working MVP — 21 routes, every
 nav-linked feature functional against real (seeded) data, `npm run build`/`lint`/`typecheck`/
-`test` all clean. What's left is finishing M9: a fresh confirmation-rule audit against
-PRODUCT_SPEC.md §20, and a multi-timezone correctness pass (see the UTC-vs-local due-date gap
-below). Everything else is genuinely done, not stubbed. Run `npm run db:seed` then `npm run dev`
-and sign in with the printed credentials to see it.
+`test` all clean. The whole app now also switches between English and German from Settings, and
+Settings has email/password change forms. What's left is finishing M9: a fresh confirmation-rule
+audit against PRODUCT_SPEC.md §20, and a multi-timezone correctness pass (see the UTC-vs-local
+due-date gap below). Everything else is genuinely done, not stubbed. Run `npm run db:seed` then
+`npm run dev` and sign in with the printed credentials to see it.
+
+## Localization (EN/DE) + account settings (post-MVP addition)
+
+User asked for a language switch to German and the ability to change login email/password from
+Settings. Both added:
+
+- **i18n architecture** (`src/lib/i18n/`): deliberately NOT a heavyweight library (next-intl
+  etc. carry real risk of Next.js 16 incompatibility given how new it is) — a flat
+  `translate(locale, "English source string", vars?)` lookup (`src/lib/i18n/translate.ts` +
+  `de.ts`), where the English string IS the dictionary key. This means most call sites are just
+  `t("Some UI text")` — self-documenting, and any string missing from `de.ts` degrades to
+  English instead of breaking. `User.locale` (new column, default `"en"`) is the source of
+  truth once logged in; a `guest_locale` cookie (`src/lib/actions/locale.ts`) covers the
+  pre-login `/login` page, which has its own EN/DE toggle.
+  - Server Components: `requireUserT()` (`src/lib/i18n/server.ts`) — one call gets both the
+    user and a bound `t`.
+  - Client Components: `<LocaleProvider>` (mounted once in `(app)/layout.tsx`) + `useTranslation()`
+    hook.
+  - Date formatting (`src/lib/utils/format.ts`) takes a `locale` param and uses date-fns' `de`
+    locale for month/weekday names, plus its own dictionary lookup for "Today"/"Tomorrow"/
+    "Yesterday".
+  - The AI tool layer's `ToolContext` now carries `t` too, so tool `describeCall()` (the text
+    shown in the assistant chat's confirmation card) is localized; `runChatTurn`'s system
+    prompt gets a "Respond in German" suffix when live. The offline `MockProvider`'s own
+    canned replies stay English (documented, not silently broken) — translating a rule-based
+    fallback's English-keyword matching would need a second parallel keyword set, not worth it
+    for a fallback path.
+  - **Deliberately NOT translated**: historical `ActivityLogEntry.summary` / `AIActionLog`
+    strings already written to the database (translating retroactively would mean storing
+    keys+params instead of final strings — a real architecture change, not a quick add; the
+    Activity page shows a one-line note about this when viewed in German) and email thread/
+    message content (that's user/contact-authored data, never auto-translated).
+  - Verified in-browser across every page: Dashboard, Projects (list/detail/forms), Tasks
+    (list/detail/forms), Planning (day + week, including date-fns German weekday/month names
+    and plan-block-type labels), Weekly Review, Email (list/thread/assistant panel), Follow-ups,
+    Inbox, Search, Activity, Calendar, Settings, AI Assistant chat. Caught and fixed 5 real
+    coverage gaps via a dedicated sweep (`Priority`, `Create task`, `No projects yet`, `Risks`,
+    `Decisions` were rendering in English inside the German UI) plus one German-mode-only date
+    bug (Settings' "last synced" timestamp wasn't passed the locale).
+- **Account settings** (`src/lib/actions/account.ts`, Settings → Account): change email and
+  change password, each gated behind re-entering the *current* password (verified with the
+  same `verifyPassword`/`hashPassword` helpers `login()` already uses) — not just a "trust the
+  session" update. Logged to the activity trail. Did not execute a live end-to-end submit test
+  against the real seeded session (would have risked changing this session's own login
+  credentials mid-work); verified instead via code review against the same
+  `useActionState`/Zod/`requireUser()` pattern already proven working in every other form in
+  this app (login, project, task, memory, waiting-item).
 
 ## Environment
 

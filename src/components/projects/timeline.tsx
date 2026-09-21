@@ -1,5 +1,6 @@
 import { formatDate } from "@/lib/utils/format";
 import { cn } from "@/lib/utils/cn";
+import type { Locale, TranslateFn } from "@/lib/i18n/translate";
 
 interface TimelineMilestone {
   id: string;
@@ -18,13 +19,17 @@ export function ProjectTimeline({
   startDate,
   targetDate,
   milestones,
+  t,
+  locale,
 }: {
   startDate: Date | null;
   targetDate: Date | null;
   milestones: TimelineMilestone[];
+  t: TranslateFn;
+  locale: Locale;
 }) {
   if (!startDate && !targetDate && milestones.length === 0) {
-    return <p className="px-4 py-6 text-center text-xs text-subtle">No dates set for this project yet.</p>;
+    return <p className="px-4 py-6 text-center text-xs text-subtle">{t("No dates set for this project yet.")}</p>;
   }
 
   const allDates = [
@@ -54,7 +59,7 @@ export function ProjectTimeline({
         <div
           className="absolute top-1/2 h-3 w-0.5 -translate-y-1/2 bg-foreground/60"
           style={{ left: `${todayPct}%` }}
-          title="Today"
+          title={t("Today")}
         />
         {milestones.map((m) => (
           <div
@@ -64,14 +69,14 @@ export function ProjectTimeline({
           >
             <div className={cn("h-3 w-3 rounded-full border-2 bg-surface", toneClass[m.status])} />
             <div className="absolute top-4 left-1/2 w-max -translate-x-1/2 text-center text-[10px] text-muted opacity-0 transition-opacity group-hover:opacity-100">
-              {m.title} — {formatDate(m.targetDate)}
+              {m.title} — {formatDate(m.targetDate, locale)}
             </div>
           </div>
         ))}
       </div>
       <div className="mt-2 flex justify-between text-[10px] text-subtle">
-        <span>{startDate ? formatDate(startDate) : formatDate(min)}</span>
-        <span>{targetDate ? formatDate(targetDate) : formatDate(max)}</span>
+        <span>{startDate ? formatDate(startDate, locale) : formatDate(min, locale)}</span>
+        <span>{targetDate ? formatDate(targetDate, locale) : formatDate(max, locale)}</span>
       </div>
     </div>
   );

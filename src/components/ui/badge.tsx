@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils/cn";
 import type { Priority } from "@/generated/prisma/enums";
+import type { TranslateFn } from "@/lib/i18n/translate";
 
 const priorityClasses: Record<Priority, string> = {
   CRITICAL: "bg-critical/10 text-critical border-critical/30",
@@ -8,7 +9,14 @@ const priorityClasses: Record<Priority, string> = {
   LOW: "bg-subtle/10 text-subtle border-subtle/30",
 };
 
-export function PriorityBadge({ priority }: { priority: Priority }) {
+const PRIORITY_LABEL: Record<Priority, string> = {
+  CRITICAL: "Critical",
+  HIGH: "High",
+  NORMAL: "Normal",
+  LOW: "Low",
+};
+
+export function PriorityBadge({ priority, t = (k) => k }: { priority: Priority; t?: TranslateFn }) {
   return (
     <span
       className={cn(
@@ -16,7 +24,7 @@ export function PriorityBadge({ priority }: { priority: Priority }) {
         priorityClasses[priority],
       )}
     >
-      {priority}
+      {t(PRIORITY_LABEL[priority])}
     </span>
   );
 }

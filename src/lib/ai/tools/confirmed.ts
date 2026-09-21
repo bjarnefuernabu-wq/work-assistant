@@ -21,7 +21,7 @@ export const sendEmailDraftTool = defineTool({
   isWrite: true,
   requiresConfirmation: true,
   inputSchema: z.object({ draftId: z.string() }),
-  describeCall: (input) => `Send email draft ${input.draftId}`,
+  describeCall: (input, ctx) => ctx.t("Send email draft {id}", { id: input.draftId }),
   async run(input, ctx) {
     const result = await performSendEmailDraft(input.draftId, ctx.userId);
     revalidatePath("/email");
@@ -36,7 +36,7 @@ export const applyWeeklyPlanTool = defineTool({
   isWrite: true,
   requiresConfirmation: true,
   inputSchema: z.object({ weekStart: z.string().describe("ISO date for the Monday of the target week") }),
-  describeCall: () => `Assign planned dates to this week's unplanned tasks`,
+  describeCall: (_input, ctx) => ctx.t("Assign planned dates to this week's unplanned tasks"),
   async run(input, ctx) {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: ctx.userId } });
     const weekStart = startOfWeek(new Date(input.weekStart), { weekStartsOn: 1 });
