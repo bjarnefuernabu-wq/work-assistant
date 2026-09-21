@@ -118,21 +118,41 @@ scheduler would need to move to a real process — noted as a future concern, no
 
 ## AI tool layer (enforcement)
 
-All model-facing tools live in `src/lib/ai/tools/*.ts`, each exporting: a Zod input schema, a
-Zod output schema, an `isWrite: boolean` flag, and a `run(input, ctx)` function. `ctx` always
-carries the authenticated user id — **never** taken from model-provided input. Write tools with
-real-world consequence additionally return a `confirmationRequired` preview payload instead of
-executing on the first call; the UI/chat surfaces it, and only a second, explicit
-user-confirmed call actually performs the mutation. Every tool invocation — args, whether
-confirmation was required, whether it was given, and the result — is written to `AIActionLog`
-before returning to the model. The model **never** gets direct database or filesystem access; it
-can only call these tools.
+Implemented in `src/lib/ai/`. Model-facing tools live in `src/lib/ai/tools/{reads,writes,
+confirmed}.ts`, each a `ToolDefinition`: name, description (sent to the model), a Zod
+`inputSchema`, `isWrite`, `requiresConfirmation`, and `run(input, ctx)`. `ctx.userId` always
+comes from `requireUser()`'s session, **never** from model-provided input.
+
+`src/lib/ai/tool-runner.ts::executeToolCall` is the **only** path from model output to the
+database:
+1. Re-validates the model's arguments against the tool's own Zod schema (never trusts the
+   model's JSON as-is).
+2. If `requiresConfirmation` is true, it does **not** call `run()` — it persists a
+   `PENDING_CONFIRMATION` `AIActionLog` row and returns that to the caller. `run()` only
+   executes later, from `confirmPendingAction(logId, ctx)`, itself only reachable from an
+   explicit user click (`confirmAssistantAction` Server Action) — `ctx.userId` is re-checked
+   against the log row's owner at that point too.
+3. Every attempt (validation failure, immediate success, or deferred-then-confirmed) writes an
+   `AIActionLog` row: args, whether confirmation was required/given, and a result summary.
+
+Verified (see tests.json `ai-tool-write-confirmation` / `ai-tool-auth-bypass-blocked`): a
+`requiresConfirmation` tool leaves data untouched until confirmed; a tool call targeting another
+user's record is rejected server-side regardless of what was requested.
+
+`src/lib/ai/chat.ts::runChatTurn` drives the agentic loop: call the provider, if it requests a
+tool run `executeToolCall`, append the result, call the provider again — capped at 4 iterations.
+The model never gets direct database or filesystem access; it can only call these tools.
 
 ## Context retrieval
 
-`src/lib/ai/context.ts` builds a bounded context object per assistant request (project-scoped,
-today-scoped, or search-scoped) instead of dumping the database. Each fact included carries its
-source entity id so answers can be traced back.
+Rather than a separate manual "fetch everything relevant" layer, context bounding happens
+through the tool layer itself: each read tool (`get_project`, `get_today_tasks`, `get_tasks`,
+...) returns only the slice of data its name implies, and a real model (Anthropic tool-use)
+decides which to call based on the question — "How is Project X going?" calls `get_project`,
+not a dump of the whole database. This is the standard shape for a tool-using agent and avoids a
+redundant, hard-to-keep-in-sync second retrieval system. The `MockProvider` fallback (no API
+key) does its own light keyword routing to the same tools, documented in
+`src/lib/ai/providers/mock.ts`.
 
 ## Connector architecture
 

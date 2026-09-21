@@ -86,19 +86,22 @@
       "id": "ai-tool-read-only",
       "milestone": "M5",
       "description": "Assistant answers 'how is Project X going' using only get_project/get_tasks/etc. tool output, with no direct DB access from the model, and every call recorded in AIActionLog",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser via /assistant with MockProvider: 'How is Outdoor Action Day going?' -> get_project tool call -> grounded answer, 2026-09-21"
     },
     {
       "id": "ai-tool-write-confirmation",
       "milestone": "M5",
       "description": "Assistant proposing create_task or send_email_draft returns a confirmation preview first; the write only executes after a second explicit confirm",
-      "status": "pending"
+      "status": "passing",
+      "verified": "temporary route-handler test: send_email_draft leaves draft DRAFT until confirmPendingAction called, then SENT; double-confirm fails cleanly. Route removed after. 2026-09-21"
     },
     {
       "id": "ai-tool-auth-bypass-blocked",
       "milestone": "M5",
       "description": "A tool call crafted with another user's id in its arguments is rejected server-side regardless of what the model sent",
-      "status": "pending"
+      "status": "passing",
+      "verified": "same test: complete_task against another user's task id returned {ok:false, error:'Task not found or not yours.'}, 2026-09-21"
     },
     {
       "id": "connector-mock-calendar-sync",

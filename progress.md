@@ -49,7 +49,37 @@ terminal opened after the installs won't need this.
       summary. This is the reference implementation of the "bulk task edits require
       confirmation" rule (PRODUCT_SPEC.md §20) — verified in-browser end to end (generate →
       preview → confirm → tasks now show up as planned).
-- [ ] **M5 — AI tool layer**: not started (next up).
+- [x] **M5 — AI tool layer**: `src/lib/ai/types.ts` defines the provider-neutral contract
+      (`AIProvider`, `ToolDefinition` with Zod input schema + `isWrite`/`requiresConfirmation`
+      flags). 13 tools in `src/lib/ai/tools/{reads,writes,confirmed}.ts` — reads
+      (`get_projects`, `get_project`, `get_tasks`, `get_today_tasks`, `get_week_context`,
+      `get_waiting_items`, `find_free_time`), single-entity writes (`create_task`,
+      `update_task`, `complete_task`, `create_email_draft`), and consequential writes
+      (`send_email_draft`, `apply_weekly_plan`) that require confirmation.
+      `src/lib/ai/tool-runner.ts` is the **sole place model output can touch the database**:
+      every call re-validates args with the tool's own Zod schema (never trusts the model's
+      JSON), authorizes against `ctx.userId` from the real session (never from model input),
+      and writes an `AIActionLog` row for every attempt. Confirmation-required tools don't run
+      on first request — they persist a `PENDING_CONFIRMATION` log row and only execute from a
+      separate `confirmPendingAction` call triggered by an explicit user click.
+      `src/lib/ai/chat.ts` runs the agentic loop (provider ↔ tool-runner, capped at 4
+      iterations). Two providers: `AnthropicProvider` (real Claude tool-use, used when
+      `ANTHROPIC_API_KEY` is set) and `MockProvider` (deterministic keyword-routed fallback, no
+      network) — picked by `src/lib/ai/provider.ts`. `/assistant` chat UI built and verified
+      in-browser end-to-end: "How is Outdoor Action Day going?" → real `get_project` tool call
+      against the live DB → grounded summary. Security properties verified via a temporary
+      route-handler test (removed after): (1) a `requiresConfirmation` tool does **not** mutate
+      data on the first call — confirmed via `send_email_draft` leaving the draft `DRAFT` until
+      `confirmPendingAction` was called, then `SENT`; (2) double-confirming the same action
+      fails cleanly; (3) a tool call for another user's task is rejected server-side
+      (`"Task not found or not yours"`) regardless of what was requested — the auth-bypass
+      scenario from tests.json.
+      Known gap: `MockProvider` only implements read-intent keyword routing (no write
+      intents), so the write/confirmation UX in `/assistant` itself is only exercisable with a
+      real `ANTHROPIC_API_KEY` configured; it *is* fully exercised without a key via the
+      `/planning/week` "Apply this plan" button, which shares the same `ConfirmButton` pattern.
+      Chat history is client-side React state only (not persisted) — acceptable for MVP, noted
+      as a gap.
 - [ ] **M6 — Connectors**: not started.
 - [ ] **M7 — Email & follow-ups**: not started.
 - [ ] **M8 — Briefings**: not started.
@@ -70,10 +100,7 @@ terminal opened after the installs won't need this.
 
 ## Immediate next steps (pick up here)
 
-1. M5 — AI tool layer: Zod-schema'd tools in `src/lib/ai/tools/`, `AIProvider` interface with
-   `AnthropicProvider` + `MockProvider`, context retrieval (`src/lib/ai/context.ts`),
-   `/assistant` chat UI, `AIActionLog` writes on every call.
-2. M6 — Connectors: `src/lib/connectors/types.ts` interfaces + mock calendar/mail connectors
+1. M6 — Connectors: `src/lib/connectors/types.ts` interfaces + mock calendar/mail connectors
    with idempotent sync, `/settings` connector management UI.
 3. M7 — Email assistant + follow-ups UI (`/email`, `/followups`) — data model already seeded,
    needs pages + draft workflow (generate → show → edit → confirm → send).
