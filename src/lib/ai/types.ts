@@ -33,6 +33,12 @@ export interface ChatMessage {
   toolName?: string;
   /** Present only on the "assistant" tool-call message — the arguments the model sent. */
   toolInput?: unknown;
+  /**
+   * Present only on the "assistant" tool-call message — opaque provider-specific data that must
+   * be echoed back verbatim on the next request (e.g. Gemini's per-call `thought_signature`).
+   * Ignored by providers that don't need it.
+   */
+  toolCallExtra?: unknown;
 }
 
 export type ProviderToolCall = {
@@ -43,6 +49,8 @@ export type ProviderToolCall = {
   callId?: string;
   /** Optional natural-language lead-in the model wants to show before the tool result. */
   text?: string;
+  /** Opaque provider-specific data to round-trip via ChatMessage.toolCallExtra — see there. */
+  extra?: unknown;
 };
 
 export type ProviderTextResponse = {

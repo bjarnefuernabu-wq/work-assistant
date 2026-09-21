@@ -434,6 +434,8 @@ export const DE: Record<string, string> = {
     "Das benötigt deine Bestätigung, bevor ich es mache: **{summary}**. Unten bestätigen zum Fortfahren, oder sag mir, dass ich abbrechen soll.",
   "I wasn't able to finish that within a reasonable number of steps — try narrowing the request.":
     "Ich konnte das nicht in einer angemessenen Anzahl an Schritten abschließen — versuche, die Anfrage einzugrenzen.",
+  "The AI provider is temporarily unavailable ({error}). Please try again in a moment.":
+    "Der KI-Anbieter ist vorübergehend nicht verfügbar ({error}). Bitte versuche es gleich noch einmal.",
   "Run {tool}": "{tool} ausführen",
   "Ran {tool}": "{tool} ausgeführt",
   "Send email draft {id}": "E-Mail-Entwurf {id} senden",

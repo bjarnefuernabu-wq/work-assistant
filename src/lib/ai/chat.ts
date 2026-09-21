@@ -27,7 +27,18 @@ export async function runChatTurn(
   const system = SYSTEM_PROMPT + (locale === "de" ? " Respond in German." : "");
 
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-    const response = await provider.respond({ system, messages, tools: ALL_TOOLS });
+    let response;
+    try {
+      response = await provider.respond({ system, messages, tools: ALL_TOOLS });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown provider error";
+      console.error("AI provider request failed:", message);
+      messages.push({
+        role: "assistant",
+        content: t("The AI provider is temporarily unavailable ({error}). Please try again in a moment.", { error: message }),
+      });
+      return { messages };
+    }
 
     if (response.type === "text") {
       messages.push({ role: "assistant", content: response.text || t("(no response)") });
@@ -41,6 +52,7 @@ export async function runChatTurn(
       toolCallId: callId,
       toolName: response.toolName,
       toolInput: response.input,
+      toolCallExtra: response.extra,
     });
 
     const outcome = await executeToolCall(response.toolName, response.input, { userId, t }, userMessage);

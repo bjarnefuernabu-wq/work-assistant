@@ -4,10 +4,18 @@ import type { AIProvider, ChatMessage, ProviderResponse, ToolDefinition } from "
 const MODEL = "gemini-flash-latest";
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
+type OpenAIToolCall = {
+  id: string;
+  type: "function";
+  function: { name: string; arguments: string };
+  /** Gemini-specific: required on subsequent requests, see ai.google.dev/gemini-api/docs/thought-signatures. */
+  extra_content?: unknown;
+};
+
 type OpenAIMessage = {
   role: "system" | "user" | "assistant" | "tool";
   content: string | null;
-  tool_calls?: { id: string; type: "function"; function: { name: string; arguments: string } }[];
+  tool_calls?: OpenAIToolCall[];
   tool_call_id?: string;
 };
 
@@ -49,7 +57,7 @@ export class GeminiProvider implements AIProvider {
     const data = await res.json();
     return data.choices[0].message as {
       content: string | null;
-      tool_calls?: { id: string; function: { name: string; arguments: string } }[];
+      tool_calls?: OpenAIToolCall[];
     };
   }
 
@@ -77,6 +85,7 @@ export class GeminiProvider implements AIProvider {
                 id: m.toolCallId,
                 type: "function",
                 function: { name: m.toolName ?? "unknown", arguments: JSON.stringify(m.toolInput ?? {}) },
+                ...(m.toolCallExtra ? { extra_content: m.toolCallExtra } : {}),
               },
             ],
           };
@@ -94,6 +103,7 @@ export class GeminiProvider implements AIProvider {
         input: JSON.parse(call.function.arguments),
         callId: call.id,
         text: message.content ?? undefined,
+        extra: call.extra_content,
       };
     }
     return { type: "text", text: message.content ?? "" };
