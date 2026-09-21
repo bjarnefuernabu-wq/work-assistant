@@ -42,6 +42,10 @@ export class MockProvider implements AIProvider {
         "I'm running in fallback mode (no ANTHROPIC_API_KEY configured), so I can only answer a few specific question types right now: what's today, what's this week, who owes me a response, what's critical, or how a named project is going. Add a real key in Settings for full assistant capability.",
     };
   }
+
+  async complete(): Promise<string> {
+    return "(Offline fallback mode has no free-text generation — this feature needs a real ANTHROPIC_API_KEY. Showing a template result instead.)";
+  }
 }
 
 function summarizeToolResult(msg: ChatMessage): string {

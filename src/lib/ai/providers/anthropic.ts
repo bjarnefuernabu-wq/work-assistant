@@ -65,4 +65,15 @@ export class AnthropicProvider implements AIProvider {
     const text = response.content.find((b) => b.type === "text");
     return { type: "text", text: text && text.type === "text" ? text.text : "" };
   }
+
+  async complete({ system, prompt }: { system: string; prompt: string }): Promise<string> {
+    const response = await this.client.messages.create({
+      model: MODEL,
+      max_tokens: 1024,
+      system,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = response.content.find((b) => b.type === "text");
+    return text && text.type === "text" ? text.text : "";
+  }
 }

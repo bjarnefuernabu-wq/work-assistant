@@ -95,7 +95,21 @@ terminal opened after the installs won't need this.
       surfaces AI provider status (live/mock) and full memory CRUD (add/edit/delete
       `MemoryEntry`, grouped by category) — satisfies the "visible, editable, deletable, never
       silent" memory requirement.
-- [ ] **M7 — Email & follow-ups**: not started.
+- [x] **M7 — Email assistant & follow-ups**: `/followups` (`WaitingItem` list sorted by age,
+      overdue-follow-up badge, add/resolve, recently-resolved history). `/email` (thread list)
+      and `/email/[id]` (transcript + assistant panel: summarize, identify unanswered
+      questions/commitments, generate reply draft, iterate tone shorter/friendlier/more
+      formal, edit inline, send). `src/lib/email/assist.ts` calls through the `AIProvider` for
+      real generation when live, and a clearly-labeled template fallback when not (never
+      silently pretends a template is a real answer). `src/lib/email/send.ts` is the single
+      send implementation shared by the direct UI action and the `send_email_draft` AI tool —
+      one send path, not two. Verified in-browser end-to-end: summarize → identify action
+      items → generate draft → "make it shorter/friendlier/more formal" → edit → confirm → send
+      (simulated, no live mail connector) → thread's "needs action" flag clears. Caught and
+      fixed a real bug during this pass: the generated draft's subject line wasn't round-tripped
+      from the server action, so the confirmation dialog showed "Re:" instead of "Re: AV setup
+      requirements" — fixed by returning `subject` from `generateDraftAction` instead of
+      hardcoding it client-side.
 - [ ] **M8 — Briefings**: not started.
 - [ ] **M9 — Hardening**: not started.
 
@@ -114,12 +128,12 @@ terminal opened after the installs won't need this.
 
 ## Immediate next steps (pick up here)
 
-1. M7 — Email assistant + follow-ups UI (`/email`, `/followups`) — data model already seeded,
-   needs pages + draft workflow (generate → show → edit → confirm → send).
-2. M8 — Morning briefing / weekly review generation.
-3. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
-4. Search (`/search`) and Activity log (`/activity`) pages — still 404 gaps; nav already links
+1. M8 — Morning briefing / weekly review generation.
+2. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
+3. Search (`/search`) and Activity log (`/activity`) pages — still 404 gaps; nav already links
    to them.
+4. M9 — hardening pass: tests, remaining edge/empty/error states, re-review confirmation
+   coverage across all write paths.
 6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
    placeholder-free gaps; nav links to them already exist and currently 404.
 

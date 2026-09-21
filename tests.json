@@ -121,13 +121,15 @@
       "id": "email-draft-never-autosend",
       "milestone": "M7",
       "description": "AI-generated email draft is never sent without a separate explicit user confirmation, even via the assistant chat",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser: generate draft -> Send shows confirm dialog with actual subject -> only sends after 'Send now' click; same performSendEmailDraft path is used by the AI tool's requiresConfirmation gate, 2026-09-21"
     },
     {
       "id": "waiting-item-detection",
       "milestone": "M7",
       "description": "An outgoing email with no reply after N days produces a suggested (not auto-created) WaitingItem",
-      "status": "pending"
+      "status": "pending",
+      "note": "WaitingItem CRUD and dashboard surfacing both work against manually/seed-created items; automatic detection from email threads (heuristic scan for outgoing messages with no reply) is not yet implemented"
     },
     {
       "id": "morning-briefing-generation",

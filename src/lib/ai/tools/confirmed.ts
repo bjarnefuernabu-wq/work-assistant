@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/client";
 import { logActivity } from "@/lib/activity/log";
 import { generateWeeklyPlan } from "@/lib/planning/generate-weekly";
+import { performSendEmailDraft } from "@/lib/email/send";
 import { startOfWeek, startOfDay } from "date-fns";
 import type { ToolDefinition } from "@/lib/ai/types";
 
@@ -22,19 +23,10 @@ export const sendEmailDraftTool = defineTool({
   inputSchema: z.object({ draftId: z.string() }),
   describeCall: (input) => `Send email draft ${input.draftId}`,
   async run(input, ctx) {
-    const draft = await prisma.emailDraft.findFirst({ where: { id: input.draftId, userId: ctx.userId } });
-    if (!draft) return { ok: false as const, error: "Draft not found or not yours." };
-    // No real mail connector is wired up (mock-mail only) — this simulates the send so the
-    // confirmation flow is real end-to-end without actually delivering mail. See
-    // ARCHITECTURE.md / connectors.
-    await prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "SENT", sentAt: new Date() } });
-    if (draft.threadId) {
-      await prisma.emailThread.update({ where: { id: draft.threadId }, data: { requiresAction: false } });
-    }
-    await logActivity({ userId: ctx.userId, entityType: "EmailDraft", entityId: draft.id, action: "email_sent", summary: `Sent email '${draft.subject}' (simulated — no live mail connector)` });
+    const result = await performSendEmailDraft(input.draftId, ctx.userId);
     revalidatePath("/email");
     revalidatePath("/dashboard");
-    return { ok: true as const };
+    return result;
   },
 });
 

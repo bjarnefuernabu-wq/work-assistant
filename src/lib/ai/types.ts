@@ -59,4 +59,6 @@ export interface AIProvider {
     messages: ChatMessage[];
     tools: ToolDefinition[];
   }): Promise<ProviderResponse>;
+  /** Plain text completion, no tools — for email summarization/drafting helpers. */
+  complete(input: { system: string; prompt: string }): Promise<string>;
 }
