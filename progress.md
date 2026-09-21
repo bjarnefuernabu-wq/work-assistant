@@ -58,6 +58,45 @@ Settings. Both added:
   `useActionState`/Zod/`requireUser()` pattern already proven working in every other form in
   this app (login, project, task, memory, waiting-item).
 
+## Live deployment + free AI provider (post-MVP addition)
+
+The app is now live at **https://work-assistant-two.vercel.app** (private Vercel project
+`bjarnefuernabu-wq/work-assistant`, GitHub repo `bjarnefuernabu-wq/work-assistant`, private).
+Deployed via `vercel deploy --prod` using a manually-generated Vercel Personal Access Token (see
+ARCHITECTURE.md D10 for why interactive `vercel login` doesn't work in this tool environment).
+
+- **Database**: switched from local SQLite to hosted PostgreSQL (Neon, via Vercel's marketplace
+  integration) — see ARCHITECTURE.md D10. Local dev now also points at the same hosted Neon
+  instance (no separate local DB).
+- **AI provider**: added `GeminiProvider` (`src/lib/ai/providers/gemini.ts`) as a free alternative
+  to `AnthropicProvider`, using Gemini's OpenAI-compatible endpoint (no extra SDK). Provider
+  selection order: `ANTHROPIC_API_KEY` → `GEMINI_API_KEY` → `MockProvider`.
+- **Model**: `gemini-flash-lite-latest`, not `gemini-flash-latest` — Flash-Lite gets 500
+  free-tier requests/day vs. Flash's 20, which matters because one assistant chat turn can make
+  several tool-call round trips against the same daily quota.
+- **Stability fixes applied after live testing surfaced real bugs**:
+  - Gemini requires each function-call part to echo back its own `thought_signature` on the next
+    request or it 400s — added `ChatMessage.toolCallExtra` / `ProviderToolCall.extra` as an
+    opaque per-provider passthrough (Anthropic ignores it).
+  - `runChatTurn` now catches `provider.respond()` failures (transient 5xx, timeout, quota
+    exhaustion) and returns a translated in-chat error message instead of crashing the page.
+  - `GeminiProvider.chat()` retries 429/503 once or twice with a short delay, and aborts via
+    `AbortController` after 30s so a hung request can't hang the whole page.
+  - `MAX_TOOL_ITERATIONS` raised 4 → 8: Gemini's tool-calling style needs more granular reads
+    than Claude did for the same question (e.g. 4 separate read calls before answering), and the
+    old cap of 4 left zero budget left to actually emit the final text response — this was the
+    root cause of "I wasn't able to finish that" on ordinary broad questions.
+  - `.vercelignore` added (excludes local `.env`) after a first deploy bundled it into the build
+    upload — not a public exposure (build-time only), but fixed for hygiene.
+  - Piping secrets into `vercel env add` via PowerShell prepended a BOM character that broke the
+    Gemini `Authorization` header (`ByteString` conversion error). Worked around by writing env
+    vars through the Vercel REST API directly instead of the CLI's stdin.
+
+Not yet done: full "test every function on the live site" pass beyond the AI assistant (dashboard,
+projects, tasks, planning, email, follow-ups, inbox, search, activity, calendar, settings incl.
+language switch and account credential change) — only spot-checked so far (login, dashboard,
+assistant chat).
+
 ## Environment
 
 Machine started with **no dev tooling at all** (no Node/npm/git/Python). Installed via winget

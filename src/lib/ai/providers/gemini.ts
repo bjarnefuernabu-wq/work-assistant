@@ -1,8 +1,13 @@
 import { z } from "zod";
 import type { AIProvider, ChatMessage, ProviderResponse, ToolDefinition } from "@/lib/ai/types";
 
-const MODEL = "gemini-flash-latest";
+// flash-lite over flash: 500 free-tier requests/day vs. 20 — matters here since one chat turn
+// can make several tool-call round trips against the same daily quota.
+const MODEL = "gemini-flash-lite-latest";
 const ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+const REQUEST_TIMEOUT_MS = 30_000;
+const RETRY_DELAYS_MS = [500, 2000];
+const RETRYABLE_STATUS = new Set([429, 503]);
 
 type OpenAIToolCall = {
   id: string;
@@ -27,38 +32,56 @@ export class GeminiProvider implements AIProvider {
   constructor(private apiKey: string) {}
 
   private async chat(messages: OpenAIMessage[], tools?: ToolDefinition[]) {
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this.apiKey}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages,
-        ...(tools && tools.length > 0
-          ? {
-              tools: tools.map((t) => ({
-                type: "function" as const,
-                function: {
-                  name: t.name,
-                  description: t.description,
-                  parameters: z.toJSONSchema(t.inputSchema, { target: "draft-7" }),
-                },
-              })),
-            }
-          : {}),
-      }),
+    const body = JSON.stringify({
+      model: MODEL,
+      messages,
+      ...(tools && tools.length > 0
+        ? {
+            tools: tools.map((t) => ({
+              type: "function" as const,
+              function: {
+                name: t.name,
+                description: t.description,
+                parameters: z.toJSONSchema(t.inputSchema, { target: "draft-7" }),
+              },
+            })),
+          }
+        : {}),
     });
-    if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Gemini API error ${res.status}: ${body}`);
+
+    for (let attempt = 0; ; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      let res: Response;
+      try {
+        res = await fetch(ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${this.apiKey}` },
+          body,
+          signal: controller.signal,
+        });
+      } catch (err) {
+        clearTimeout(timeout);
+        if (err instanceof Error && err.name === "AbortError") {
+          throw new Error(`Gemini API request timed out after ${REQUEST_TIMEOUT_MS / 1000}s`);
+        }
+        throw err;
+      }
+      clearTimeout(timeout);
+
+      if (res.ok) {
+        const data = await res.json();
+        return data.choices[0].message as { content: string | null; tool_calls?: OpenAIToolCall[] };
+      }
+
+      if (RETRYABLE_STATUS.has(res.status) && attempt < RETRY_DELAYS_MS.length) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+
+      const responseBody = await res.text();
+      throw new Error(`Gemini API error ${res.status}: ${responseBody}`);
     }
-    const data = await res.json();
-    return data.choices[0].message as {
-      content: string | null;
-      tool_calls?: OpenAIToolCall[];
-    };
   }
 
   async respond({
