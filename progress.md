@@ -35,8 +35,21 @@ terminal opened after the installs won't need this.
       recommendation** (never a bare score), built from real waiting-item age, overdue tasks,
       near-term milestones with open work, and explicit `AT_RISK` status. Verified in-browser
       against seeded data — matches the spec's worked examples almost verbatim.
-- [ ] **M4 — Planning**: not started.
-- [ ] **M5 — AI tool layer**: not started.
+- [x] **M4 — Planning**: `src/lib/planning/generate-daily.ts` and `generate-weekly.ts` are pure
+      functions (unit-testable, no I/O) implementing the spec's rules: daily plan targets ~75%
+      of free work time (computed as work hours minus meetings), reserves a triage block, a
+      prep block before each meeting that needs one, fills focus blocks with the most urgent
+      open tasks, and a follow-ups block at the end — verified in-browser producing exactly the
+      shape from the spec's worked example, including a genuine leftover buffer gap. Daily
+      plans persist (`DailyPlan`/`DailyPlanBlock`) and are editable (remove a block,
+      regenerate). Weekly plan is a **live, unpersisted proposal** (greedy day-by-day capacity
+      fill respecting due dates, flags overloaded days / unscheduled important tasks /
+      deadline risks) with an explicit two-step `ConfirmButton` "Apply this plan" — only on
+      confirm does it bulk-write `plannedDate` on the proposed tasks and persist a `WeeklyPlan`
+      summary. This is the reference implementation of the "bulk task edits require
+      confirmation" rule (PRODUCT_SPEC.md §20) — verified in-browser end to end (generate →
+      preview → confirm → tasks now show up as planned).
+- [ ] **M5 — AI tool layer**: not started (next up).
 - [ ] **M6 — Connectors**: not started.
 - [ ] **M7 — Email & follow-ups**: not started.
 - [ ] **M8 — Briefings**: not started.
@@ -57,18 +70,16 @@ terminal opened after the installs won't need this.
 
 ## Immediate next steps (pick up here)
 
-1. M4 — Planning: `generate_daily_plan` / `generate_weekly_plan` logic (70-80% capacity rule),
-   `/planning/day` and `/planning/week` pages, editable generated blocks (`DailyPlanBlock`).
-2. M5 — AI tool layer: Zod-schema'd tools in `src/lib/ai/tools/`, `AIProvider` interface with
+1. M5 — AI tool layer: Zod-schema'd tools in `src/lib/ai/tools/`, `AIProvider` interface with
    `AnthropicProvider` + `MockProvider`, context retrieval (`src/lib/ai/context.ts`),
    `/assistant` chat UI, `AIActionLog` writes on every call.
-3. M6 — Connectors: `src/lib/connectors/types.ts` interfaces + mock calendar/mail connectors
+2. M6 — Connectors: `src/lib/connectors/types.ts` interfaces + mock calendar/mail connectors
    with idempotent sync, `/settings` connector management UI.
-4. M7 — Email assistant + follow-ups UI (`/email`, `/followups`) — data model already seeded,
+3. M7 — Email assistant + follow-ups UI (`/email`, `/followups`) — data model already seeded,
    needs pages + draft workflow (generate → show → edit → confirm → send).
-5. M8 — Morning briefing / weekly review generation.
-6. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
-7. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
+4. M8 — Morning briefing / weekly review generation.
+5. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
+6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
    placeholder-free gaps; nav links to them already exist and currently 404.
 
 ## Known rough edges to revisit
