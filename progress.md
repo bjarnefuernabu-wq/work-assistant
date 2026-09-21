@@ -1,6 +1,13 @@
 # Progress
 
-Last updated: 2026-09-21 (session 1, foundation).
+Last updated: 2026-09-21 (session 1, end of session — M1-M8 complete, M9 hardening in progress).
+
+**tl;dr for picking this up next session**: the app is a real, working MVP — 21 routes, every
+nav-linked feature functional against real (seeded) data, `npm run build`/`lint`/`typecheck`/
+`test` all clean. What's left is finishing M9: a fresh confirmation-rule audit against
+PRODUCT_SPEC.md §20, and a multi-timezone correctness pass (see the UTC-vs-local due-date gap
+below). Everything else is genuinely done, not stubbed. Run `npm run db:seed` then `npm run dev`
+and sign in with the printed credentials to see it.
 
 ## Environment
 
@@ -120,7 +127,7 @@ terminal opened after the installs won't need this.
       `/planning/week`): completed-this-week, overdue, waiting-on-others, new risks/decisions
       from the last 7 days, next week's deadlines/meetings, and suggested priorities (reusing
       the urgency scorer). Verified in-browser against seed data — both grounded, both concise.
-- [ ] **M9 — Hardening**: not started.
+- [~] **M9 — Hardening**: in progress, see the dedicated section below.
 
 ## Key decisions this session (full rationale in ARCHITECTURE.md)
 
@@ -204,8 +211,6 @@ real, working page against real seeded data; nothing 404s from the sidebar anymo
       `{ok:false, error:"Thread not found or not yours."}` instead of silently succeeding.
 - [ ] Fresh re-read of every write path against the confirmation rules in PRODUCT_SPEC.md §20.
 - [ ] Broader multi-timezone correctness pass (see the UTC-vs-local due-date gap noted above).
-6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
-   placeholder-free gaps; nav links to them already exist and currently 404.
 
 ## Known rough edges to revisit
 
