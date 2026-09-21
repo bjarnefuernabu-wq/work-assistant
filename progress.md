@@ -16,10 +16,25 @@ terminal opened after the installs won't need this.
 - [x] **M1 — Foundation**: repo scaffolded (Next.js 16 / React 19 / TS / Tailwind v4), Prisma
       7.10.0 + SQLite (libsql adapter) wired end-to-end and verified with a real write/read,
       full domain schema written (`prisma/schema.prisma`) and pushed to `dev.db`,
-      PRODUCT_SPEC.md / ARCHITECTURE.md / CLAUDE.md / progress.md / tests.json written.
-      Not yet done: git init + first commit (next step), auth foundation, app shell.
-- [ ] **M2 — Projects & tasks**: not started.
-- [ ] **M3 — Work dashboard**: not started.
+      PRODUCT_SPEC.md / ARCHITECTURE.md / CLAUDE.md / progress.md / tests.json written, git
+      initialized with a foundation commit. Local auth (password + iron-session), app shell
+      (sidebar nav, top bar, ⌘K command palette) all working end-to-end in the browser.
+- [x] **M2 — Projects & tasks**: full CRUD for both via Server Actions + Zod validation.
+      Project detail page: status/priority, progress bar, next milestone, next recommended
+      action (urgency-scored), simple date-axis timeline, tasks/risks/decisions/waiting
+      items/contacts/meetings/linked email all rendered from real relations. Task model has
+      distinct `dueDate`/`plannedDate`, dependencies (`TaskDependency`), quick-complete
+      checkbox. Delete (project/task) gated behind a two-step `ConfirmButton`. Demo data seed
+      (`npm run db:seed`) populates a coherent "Outdoor Action Day" project exercising every
+      relation. Verified in-browser (login → projects → project detail → tasks → complete
+      toggle) and via `npm run build`/`lint`/`typecheck` (all clean).
+- [x] **M3 — Work dashboard**: `src/lib/dashboard/data.ts` aggregates Today (events, due/
+      overdue tasks, planned-today, follow-ups due, meeting prep), This week (deadlines,
+      milestones, meetings, planned work, a capacity-vs-committed overload check), and
+      "Projects requiring attention" — each attention card is explicit **facts → observation →
+      recommendation** (never a bare score), built from real waiting-item age, overdue tasks,
+      near-term milestones with open work, and explicit `AT_RISK` status. Verified in-browser
+      against seeded data — matches the spec's worked examples almost verbatim.
 - [ ] **M4 — Planning**: not started.
 - [ ] **M5 — AI tool layer**: not started.
 - [ ] **M6 — Connectors**: not started.
@@ -42,13 +57,28 @@ terminal opened after the installs won't need this.
 
 ## Immediate next steps (pick up here)
 
-1. `git init`, first commit of the foundation.
-2. Auth foundation: `src/lib/auth/` (session cookie, password hash, seed a local user), app
-   shell/layout with nav + command palette skeleton.
-3. Seed script (`npm run db:seed`) with the "Outdoor Action Day" demo project per
-   PRODUCT_SPEC.md's demo data requirements — build this alongside Projects/Tasks (M2) so every
-   later milestone has real data to work against instead of empty states only.
-4. Projects + Tasks CRUD (M2), then Dashboard (M3).
+1. M4 — Planning: `generate_daily_plan` / `generate_weekly_plan` logic (70-80% capacity rule),
+   `/planning/day` and `/planning/week` pages, editable generated blocks (`DailyPlanBlock`).
+2. M5 — AI tool layer: Zod-schema'd tools in `src/lib/ai/tools/`, `AIProvider` interface with
+   `AnthropicProvider` + `MockProvider`, context retrieval (`src/lib/ai/context.ts`),
+   `/assistant` chat UI, `AIActionLog` writes on every call.
+3. M6 — Connectors: `src/lib/connectors/types.ts` interfaces + mock calendar/mail connectors
+   with idempotent sync, `/settings` connector management UI.
+4. M7 — Email assistant + follow-ups UI (`/email`, `/followups`) — data model already seeded,
+   needs pages + draft workflow (generate → show → edit → confirm → send).
+5. M8 — Morning briefing / weekly review generation.
+6. Inbox page (`/inbox`) — model + seed data exist, needs a UI + triage actions.
+7. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
+   placeholder-free gaps; nav links to them already exist and currently 404.
+
+## Known rough edges to revisit
+
+- Turbopack dev-mode HMR occasionally left the login form's client bundle stale after many
+  rapid file edits (clicking "Sign in" silently no-opped); a hard navigate/reload fixed it.
+  Not reproduced from a cold `npm run dev` — likely a Turbopack fast-refresh quirk, not an app
+  bug, but worth a second look if it recurs outside heavy edit sessions.
+- Root layout metadata/font setup is still the create-next-app default aside from title/colors —
+  fine for a local tool, revisit if this is ever deployed publicly.
 
 ## Known gaps / deliberately deferred
 

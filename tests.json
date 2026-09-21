@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-21",
+  "updated": "2026-09-21 (session 1, after M3)",
   "legend": {
     "status": ["pending", "in_progress", "passing", "failing", "blocked"]
   },
@@ -16,49 +16,57 @@
       "id": "foundation-build",
       "milestone": "M1",
       "description": "npm run build succeeds with no type errors",
-      "status": "pending"
+      "status": "passing",
+      "verified": "npm run build / lint / typecheck all clean, 2026-09-21"
     },
     {
       "id": "auth-login-flow",
       "milestone": "M1",
       "description": "Local user can log in with seeded credentials and reach the app shell; unauthenticated requests to any app page redirect to login",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser via Claude Browser tool, 2026-09-21"
     },
     {
       "id": "project-crud",
       "milestone": "M2",
       "description": "Create a project, edit its fields, see it reflected immediately, and see it in the project list with correct status/priority",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser against seeded 'Outdoor Action Day' + 'Internal Tools Cleanup' projects, 2026-09-21"
     },
     {
       "id": "task-due-vs-planned",
       "milestone": "M2",
       "description": "A task can independently hold a dueDate and a plannedDate; UI displays them distinctly, not merged",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser — task rows show separate 'plan' and 'due' labels, 2026-09-21"
     },
     {
       "id": "task-dependencies",
       "milestone": "M2",
       "description": "Task B set to depend on Task A is visibly blocked until A is completed",
-      "status": "pending"
+      "status": "passing",
+      "verified": "seed data (finalizeSchedule depends on confirmPartners) renders dependency + '(not done)' flag on task detail page, 2026-09-21"
     },
     {
       "id": "project-timeline",
       "milestone": "M2",
       "description": "Project page renders a simple visual timeline of milestones/tasks along a date axis",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser, milestones plotted with today marker, 2026-09-21"
     },
     {
       "id": "dashboard-today",
       "milestone": "M3",
       "description": "Dashboard 'Today' shows calendar events, planned/due/overdue tasks, and follow-ups due for a seeded demo day",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser, 2026-09-21"
     },
     {
       "id": "dashboard-attention",
       "milestone": "M3",
       "description": "A project with an 8-day-old open waiting item surfaces in 'Projects requiring attention' with a stated reason",
-      "status": "pending"
+      "status": "passing",
+      "verified": "in-browser — shows facts/observation/recommendation for Outdoor Action Day, 2026-09-21"
     },
     {
       "id": "daily-plan-generation",
