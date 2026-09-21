@@ -1,0 +1,649 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  AT_RISK
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum TaskStatus {
+  INBOX
+  PLANNED
+  IN_PROGRESS
+  WAITING
+  COMPLETED
+  CANCELLED
+}
+
+enum MilestoneStatus {
+  PLANNED
+  AT_RISK
+  DONE
+}
+
+enum WaitingStatus {
+  OPEN
+  RESOLVED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RiskStatus {
+  IDENTIFIED
+  MITIGATING
+  RESOLVED
+  ACCEPTED
+}
+
+enum SuggestionSource {
+  MANUAL
+  AI_SUGGESTED
+  CONNECTOR
+}
+
+enum InboxItemType {
+  NOTE
+  TASK_SUGGESTION
+  EMAIL
+  FOLLOWUP
+  IDEA
+  MEETING_PREP
+}
+
+enum InboxItemStatus {
+  NEW
+  TRIAGED
+  DISMISSED
+  CONVERTED
+}
+
+enum EmailDraftStatus {
+  DRAFT
+  APPROVED
+  SENT
+  DISCARDED
+}
+
+enum ConnectorType {
+  CALENDAR
+  MAIL
+  TASKS
+  FILES
+  COMMUNICATION
+}
+
+enum ConnectorStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  SYNCING
+}
+
+enum SyncStatus {
+  OK
+  ERROR
+  PENDING
+}
+
+enum MemoryCategory {
+  PREFERENCE
+  PROJECT_KNOWLEDGE
+  CONTACT
+  DECISION
+  WORKING_PATTERN
+}
+
+enum PlanBlockType {
+  FOCUS
+  MEETING
+  BUFFER
+  TRIAGE
+  FOLLOWUP
+  PREP
+}
+
+enum AIActionStatus {
+  SUCCESS
+  ERROR
+  PENDING_CONFIRMATION
+  REJECTED
+}
+
+// ---------------------------------------------------------------------------
+// Core identity
+// ---------------------------------------------------------------------------
+
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  name           String
+  passwordHash   String
+  timezone       String   @default("Europe/Berlin")
+  workHourStart  Int      @default(9)
+  workHourEnd    Int      @default(18)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  projects       Project[]
+  tasks          Task[]
+  contacts       Contact[]
+  calendarEvents CalendarEvent[]
+  emailThreads   EmailThread[]
+  emailDrafts    EmailDraft[]
+  inboxItems     InboxItem[]
+  activity       ActivityLogEntry[]
+  memory         MemoryEntry[]
+  dailyPlans     DailyPlan[]
+  weeklyPlans    WeeklyPlan[]
+  connectors     Connector[]
+  aiActions      AIActionLog[]
+  waitingItems   WaitingItem[]
+}
+
+// ---------------------------------------------------------------------------
+// Projects
+// ---------------------------------------------------------------------------
+
+model Project {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  description       String?
+  objective         String?
+  status            ProjectStatus @default(ACTIVE)
+  priority          Priority      @default(NORMAL)
+  startDate         DateTime?
+  targetDate        DateTime?
+  responsiblePerson String?
+  tagsJson          String        @default("[]")
+  budget            Float?
+  notes             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  tasks         Task[]
+  milestones    Milestone[]
+  calendarEvents CalendarEvent[]
+  projectNotes  Note[]
+  contacts      ProjectContact[]
+  emailThreads  EmailThread[]
+  emailDrafts   EmailDraft[]
+  decisions     Decision[]
+  risks         ProjectRisk[]
+  waitingItems  WaitingItem[]
+
+  @@index([userId, status])
+}
+
+model Milestone {
+  id          String          @id @default(cuid())
+  projectId   String
+  project     Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  targetDate  DateTime
+  status      MilestoneStatus @default(PLANNED)
+  order       Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([projectId])
+}
+
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
+
+model Task {
+  id                String     @id @default(cuid())
+  userId            String
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  description       String?
+  projectId         String?
+  project           Project?   @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  status            TaskStatus @default(INBOX)
+  priority          Priority   @default(NORMAL)
+  dueDate           DateTime?
+  plannedDate       DateTime?
+  estimatedDuration Int? // minutes
+  actualDuration    Int? // minutes
+  assignee          String?
+  tagsJson          String     @default("[]")
+  source            SuggestionSource @default(MANUAL)
+  sourceReference   String?
+  connectorId       String?
+  connector         Connector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+  externalId        String?
+  lastSyncedAt      DateTime?
+  syncStatus        SyncStatus?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  completedAt       DateTime?
+
+  dependsOn    TaskDependency[] @relation("DependentTask")
+  dependedOnBy TaskDependency[] @relation("DependencyTask")
+  notes        Note[]
+  waitingItems WaitingItem[]
+  planBlocks   DailyPlanBlock[]
+
+  @@index([userId, status])
+  @@index([projectId])
+  @@index([dueDate])
+  @@index([plannedDate])
+}
+
+model TaskDependency {
+  id            String @id @default(cuid())
+  taskId        String
+  task          Task   @relation("DependentTask", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnId   String
+  dependsOnTask Task   @relation("DependencyTask", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+}
+
+// ---------------------------------------------------------------------------
+// Contacts
+// ---------------------------------------------------------------------------
+
+model Contact {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  email        String?
+  phone        String?
+  organization String?
+  role         String?
+  isInternal   Boolean  @default(false)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  projects     ProjectContact[]
+  waitingItems WaitingItem[]
+
+  @@index([userId])
+}
+
+model ProjectContact {
+  id         String  @id @default(cuid())
+  projectId  String
+  project    Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contactId  String
+  contact    Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  roleOnProject String?
+
+  @@unique([projectId, contactId])
+}
+
+// ---------------------------------------------------------------------------
+// Notes / decisions / risks
+// ---------------------------------------------------------------------------
+
+model Note {
+  id        String   @id @default(cuid())
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId    String?
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title     String?
+  content   String
+  source    SuggestionSource @default(MANUAL)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([taskId])
+}
+
+model Decision {
+  id             String   @id @default(cuid())
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title          String
+  description    String
+  date           DateTime
+  participantsJson String @default("[]")
+  source         String?
+  consequences   String?
+  createdAt      DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model ProjectRisk {
+  id          String     @id @default(cuid())
+  projectId   String
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  probability RiskLevel
+  impact      RiskLevel
+  mitigation  String?
+  owner       String?
+  status      RiskStatus @default(IDENTIFIED)
+  source      SuggestionSource @default(MANUAL)
+  isConfirmed Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([projectId])
+}
+
+// ---------------------------------------------------------------------------
+// Follow-ups / Waiting For
+// ---------------------------------------------------------------------------
+
+model WaitingItem {
+  id                   String        @id @default(cuid())
+  userId               String
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title                String
+  projectId            String?
+  project              Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  taskId               String?
+  task                 Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  contactId            String?
+  contact              Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  since                DateTime
+  suggestedFollowUpAt  DateTime?
+  status               WaitingStatus @default(OPEN)
+  resolvedAt           DateTime?
+  notes                String?
+  source               SuggestionSource @default(MANUAL)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@index([userId, status])
+  @@index([projectId])
+}
+
+// ---------------------------------------------------------------------------
+// Calendar (connector-synced)
+// ---------------------------------------------------------------------------
+
+model CalendarEvent {
+  id            String      @id @default(cuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connectorId   String?
+  connector     Connector?  @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+  externalId    String?
+  title         String
+  description   String?
+  location      String?
+  startTime     DateTime
+  endTime       DateTime
+  isAllDay      Boolean     @default(false)
+  attendeesJson String      @default("[]")
+  projectId     String?
+  project       Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  requiresPrep  Boolean     @default(false)
+  prepNotes     String?
+  lastSyncedAt  DateTime?
+  syncStatus    SyncStatus?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([userId, startTime])
+  @@index([projectId])
+}
+
+// ---------------------------------------------------------------------------
+// Email (connector-synced)
+// ---------------------------------------------------------------------------
+
+model EmailThread {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connectorId     String?
+  connector       Connector? @relation(fields: [connectorId], references: [id], onDelete: SetNull)
+  externalId      String?
+  subject         String
+  participantsJson String   @default("[]")
+  projectId       String?
+  project         Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  lastMessageAt   DateTime
+  isUnread        Boolean   @default(false)
+  requiresAction  Boolean   @default(false)
+  snippet         String?
+  lastSyncedAt    DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  messages EmailMessage[]
+  drafts   EmailDraft[]
+
+  @@index([userId, lastMessageAt])
+  @@index([projectId])
+}
+
+model EmailMessage {
+  id             String      @id @default(cuid())
+  threadId       String
+  thread         EmailThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  externalId     String?
+  fromAddress    String
+  fromName       String?
+  toAddressesJson String     @default("[]")
+  sentAt         DateTime
+  bodyText       String
+  isFromUser     Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+
+  @@index([threadId, sentAt])
+}
+
+model EmailDraft {
+  id             String           @id @default(cuid())
+  userId         String
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threadId       String?
+  thread         EmailThread?     @relation(fields: [threadId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  toAddressesJson String          @default("[]")
+  subject        String
+  bodyText       String
+  status         EmailDraftStatus @default(DRAFT)
+  generatedByAI  Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  sentAt         DateTime?
+
+  @@index([userId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Universal inbox
+// ---------------------------------------------------------------------------
+
+model InboxItem {
+  id                String          @id @default(cuid())
+  userId            String
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              InboxItemType
+  title             String
+  content           String?
+  sourceType        String
+  sourceReference   String?
+  status            InboxItemStatus @default(NEW)
+  suggestedProjectId String?
+  suggestedType     String?
+  suggestedReason   String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  resolvedAt        DateTime?
+
+  @@index([userId, status])
+}
+
+// ---------------------------------------------------------------------------
+// Activity log
+// ---------------------------------------------------------------------------
+
+model ActivityLogEntry {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType   String
+  entityId     String?
+  action       String
+  summary      String
+  metadataJson String?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
+
+// ---------------------------------------------------------------------------
+// Working memory
+// ---------------------------------------------------------------------------
+
+model MemoryEntry {
+  id        String         @id @default(cuid())
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  MemoryCategory
+  content   String
+  source    String?
+  isVisible Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@index([userId, category])
+}
+
+// ---------------------------------------------------------------------------
+// Planning
+// ---------------------------------------------------------------------------
+
+model DailyPlan {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date            DateTime
+  generatedAt     DateTime @default(now())
+  capacityMinutes Int?
+  plannedMinutes  Int?
+  notes           String?
+
+  blocks DailyPlanBlock[]
+
+  @@unique([userId, date])
+}
+
+model DailyPlanBlock {
+  id          String        @id @default(cuid())
+  dailyPlanId String
+  dailyPlan   DailyPlan     @relation(fields: [dailyPlanId], references: [id], onDelete: Cascade)
+  startTime   DateTime
+  endTime     DateTime
+  type        PlanBlockType
+  title       String
+  taskId      String?
+  task        Task?         @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  eventId     String?
+  note        String?
+  order       Int           @default(0)
+
+  @@index([dailyPlanId])
+}
+
+model WeeklyPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekStart   DateTime
+  generatedAt DateTime @default(now())
+  summaryJson String
+  notes       String?
+
+  @@unique([userId, weekStart])
+}
+
+// ---------------------------------------------------------------------------
+// Connectors
+// ---------------------------------------------------------------------------
+
+model Connector {
+  id             String          @id @default(cuid())
+  userId         String
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           ConnectorType
+  provider       String
+  displayName    String
+  status         ConnectorStatus @default(DISCONNECTED)
+  configJson     String?
+  lastSyncedAt   DateTime?
+  lastSyncStatus SyncStatus?
+  lastSyncError  String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  credential     ConnectorCredential?
+  calendarEvents CalendarEvent[]
+  emailThreads   EmailThread[]
+  tasks          Task[]
+
+  @@unique([userId, type, provider])
+}
+
+model ConnectorCredential {
+  id               String    @id @default(cuid())
+  connectorId      String    @unique
+  connector        Connector @relation(fields: [connectorId], references: [id], onDelete: Cascade)
+  encryptedPayload String
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// ---------------------------------------------------------------------------
+// AI tool / assistant audit trail
+// ---------------------------------------------------------------------------
+
+model AIActionLog {
+  id                  String         @id @default(cuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userMessage         String?
+  toolName            String
+  toolArgsJson        String
+  requiresConfirmation Boolean       @default(false)
+  wasConfirmed        Boolean        @default(false)
+  confirmedAt         DateTime?
+  resultSummary       String?
+  status              AIActionStatus @default(SUCCESS)
+  createdAt           DateTime       @default(now())
+
+  @@index([userId, createdAt])
+}

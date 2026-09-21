@@ -1,0 +1,142 @@
+{
+  "version": 1,
+  "updated": "2026-09-21",
+  "legend": {
+    "status": ["pending", "in_progress", "passing", "failing", "blocked"]
+  },
+  "scenarios": [
+    {
+      "id": "foundation-db-roundtrip",
+      "milestone": "M1",
+      "description": "Prisma client (libsql adapter) can create, read, and delete a User against dev.db",
+      "status": "passing",
+      "verified": "manual script, 2026-09-21"
+    },
+    {
+      "id": "foundation-build",
+      "milestone": "M1",
+      "description": "npm run build succeeds with no type errors",
+      "status": "pending"
+    },
+    {
+      "id": "auth-login-flow",
+      "milestone": "M1",
+      "description": "Local user can log in with seeded credentials and reach the app shell; unauthenticated requests to any app page redirect to login",
+      "status": "pending"
+    },
+    {
+      "id": "project-crud",
+      "milestone": "M2",
+      "description": "Create a project, edit its fields, see it reflected immediately, and see it in the project list with correct status/priority",
+      "status": "pending"
+    },
+    {
+      "id": "task-due-vs-planned",
+      "milestone": "M2",
+      "description": "A task can independently hold a dueDate and a plannedDate; UI displays them distinctly, not merged",
+      "status": "pending"
+    },
+    {
+      "id": "task-dependencies",
+      "milestone": "M2",
+      "description": "Task B set to depend on Task A is visibly blocked until A is completed",
+      "status": "pending"
+    },
+    {
+      "id": "project-timeline",
+      "milestone": "M2",
+      "description": "Project page renders a simple visual timeline of milestones/tasks along a date axis",
+      "status": "pending"
+    },
+    {
+      "id": "dashboard-today",
+      "milestone": "M3",
+      "description": "Dashboard 'Today' shows calendar events, planned/due/overdue tasks, and follow-ups due for a seeded demo day",
+      "status": "pending"
+    },
+    {
+      "id": "dashboard-attention",
+      "milestone": "M3",
+      "description": "A project with an 8-day-old open waiting item surfaces in 'Projects requiring attention' with a stated reason",
+      "status": "pending"
+    },
+    {
+      "id": "daily-plan-generation",
+      "milestone": "M4",
+      "description": "Generate my day produces time blocks covering ~70-80% of available work time (not more), respects existing meetings, and is editable afterward",
+      "status": "pending"
+    },
+    {
+      "id": "weekly-plan-overload",
+      "milestone": "M4",
+      "description": "Weekly plan flags a day that has more planned/estimated work than available hours as overloaded",
+      "status": "pending"
+    },
+    {
+      "id": "ai-tool-read-only",
+      "milestone": "M5",
+      "description": "Assistant answers 'how is Project X going' using only get_project/get_tasks/etc. tool output, with no direct DB access from the model, and every call recorded in AIActionLog",
+      "status": "pending"
+    },
+    {
+      "id": "ai-tool-write-confirmation",
+      "milestone": "M5",
+      "description": "Assistant proposing create_task or send_email_draft returns a confirmation preview first; the write only executes after a second explicit confirm",
+      "status": "pending"
+    },
+    {
+      "id": "ai-tool-auth-bypass-blocked",
+      "milestone": "M5",
+      "description": "A tool call crafted with another user's id in its arguments is rejected server-side regardless of what the model sent",
+      "status": "pending"
+    },
+    {
+      "id": "connector-mock-calendar-sync",
+      "milestone": "M6",
+      "description": "Running the mock calendar connector sync twice does not duplicate events (idempotent upsert by externalId)",
+      "status": "pending"
+    },
+    {
+      "id": "connector-disconnected-state",
+      "milestone": "M6",
+      "description": "A disconnected connector shows a clear disconnected state in Settings and does not silently show stale data as live",
+      "status": "pending"
+    },
+    {
+      "id": "email-draft-never-autosend",
+      "milestone": "M7",
+      "description": "AI-generated email draft is never sent without a separate explicit user confirmation, even via the assistant chat",
+      "status": "pending"
+    },
+    {
+      "id": "waiting-item-detection",
+      "milestone": "M7",
+      "description": "An outgoing email with no reply after N days produces a suggested (not auto-created) WaitingItem",
+      "status": "pending"
+    },
+    {
+      "id": "morning-briefing-generation",
+      "milestone": "M8",
+      "description": "Morning briefing summarizes today's meetings/tasks/deadlines/follow-ups and names one recommended focus, grounded in real data",
+      "status": "pending"
+    },
+    {
+      "id": "weekly-review-generation",
+      "milestone": "M8",
+      "description": "Weekly review lists completed work, overdue items, new risks, and next week's deadlines from real data",
+      "status": "pending"
+    },
+    {
+      "id": "search-cross-entity",
+      "milestone": "M9",
+      "description": "Global search returns grouped results across projects/tasks/contacts/notes with match context",
+      "status": "pending"
+    },
+    {
+      "id": "activity-log-no-sensitive-content",
+      "milestone": "M9",
+      "description": "Activity log entries summarize actions without persisting full email bodies or other sensitive content",
+      "status": "pending"
+    }
+  ]
+}
