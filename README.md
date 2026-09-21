@@ -1,36 +1,47 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Work Assistant
 
-## Getting Started
+A personal, local-first work assistant: projects, tasks, daily/weekly planning, email drafting,
+follow-up tracking, an AI assistant that acts through typed tools, and connector interfaces
+proven with simulated calendar/mail providers.
 
-First, run the development server:
+Start here:
+
+- [PRODUCT_SPEC.md](PRODUCT_SPEC.md) — what it does
+- [ARCHITECTURE.md](ARCHITECTURE.md) — how it's built, and why (decision log)
+- [progress.md](progress.md) — current state, what's done, what's next
+- [CLAUDE.md](CLAUDE.md) — engineering rules for working on this repo
+- [tests.json](tests.json) — acceptance scenarios and their status
+
+## Getting started
 
 ```bash
+npm install
+cp .env.example .env   # fill in AUTH_SECRET (see the comment in .env.example)
+npx prisma db push     # create the local SQLite database
+npm run db:seed        # seed demo data + a login user (prints the credentials)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and sign in with the credentials the seed script printed.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev         # dev server
+npm run build       # production build
+npm run lint         # eslint
+npm run typecheck     # tsc --noEmit
+npm test               # vitest
+npx prisma studio        # inspect the local database
+npm run db:seed            # reset demo data
+```
 
-## Learn More
+## Stack
 
-To learn more about Next.js, take a look at the following resources:
+Next.js 16 (App Router) · React 19 · TypeScript · Tailwind CSS v4 · Prisma 7 + SQLite
+(`@prisma/adapter-libsql`) · Zod · Anthropic SDK (with a deterministic offline fallback provider)
+· Vitest.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for why each of these was chosen over the more common
+default (e.g. SQLite over PostgreSQL, a local password session over full OAuth) — every
+non-obvious choice is logged there with rationale and consequences.
