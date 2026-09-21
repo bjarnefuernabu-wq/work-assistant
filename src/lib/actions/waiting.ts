@@ -23,12 +23,17 @@ export async function createWaitingItem(_prev: WaitingFormState, formData: FormD
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   const data = parsed.data;
 
+  const [project, contact] = await Promise.all([
+    data.projectId ? prisma.project.findFirst({ where: { id: data.projectId, userId: user.id }, select: { id: true } }) : null,
+    data.contactId ? prisma.contact.findFirst({ where: { id: data.contactId, userId: user.id }, select: { id: true } }) : null,
+  ]);
+
   const item = await prisma.waitingItem.create({
     data: {
       userId: user.id,
       title: data.title,
-      contactId: data.contactId || null,
-      projectId: data.projectId || null,
+      contactId: contact?.id ?? null,
+      projectId: project?.id ?? null,
       since: data.since ? new Date(data.since) : new Date(),
       suggestedFollowUpAt: data.suggestedFollowUpAt ? new Date(data.suggestedFollowUpAt) : null,
       notes: data.notes || null,

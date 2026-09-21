@@ -167,6 +167,13 @@
       "verified": "code review: logActivity() call sites always pass short summaries, never raw email bodies/drafts; verified in-browser Activity Log output shows only summaries, 2026-09-21"
     },
     {
+      "id": "cross-user-foreign-key-injection-blocked",
+      "milestone": "M9",
+      "description": "A user cannot attach a task/draft/waiting-item to another user's project or email thread by supplying that record's id as a foreign key",
+      "status": "passing",
+      "verified": "Explore-agent audit found 3 unverified-foreign-key gaps (createEmailDraftTool, createTask/updateTask, createWaitingItem); fixed all 3 with ownership checks; verified via temporary route-handler test that create_task with a victim's projectId now yields projectId:null and create_email_draft with a victim's threadId now returns ok:false, 2026-09-21"
+    },
+    {
       "id": "unit-tests-planning-scoring",
       "milestone": "M9",
       "description": "Pure-logic modules (dashboard scoring, daily/weekly plan generation, JSON field helpers) have automated Vitest coverage",

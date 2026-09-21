@@ -184,6 +184,24 @@ real, working page against real seeded data; nothing 404s from the sidebar anymo
       as "—" (looked like missing data, not "zero"); the Weekly Review's "Suggested priorities"
       panel had no empty-state message when there were no open tasks. Test user + script
       removed after; `npm run db:seed` restores the normal demo user.
+- [x] **Auth/ownership audit of every write path**: dispatched a focused review of all
+      `src/lib/actions/*.ts` and `src/lib/ai/tools/*.ts` for two things — every action calling
+      `requireUser()`, and every foreign-key id taken from arguments (`projectId`, `threadId`,
+      `dependsOnId`, ...) being verified as belonging to the authenticated user *before* being
+      trusted, not just filtered on read. `requireUser()` coverage was already 100% (except the
+      documented `login`/`logout` exception). Found and fixed 3 real gaps where a foreign-key id
+      was trusted unverified, which would have let one user's task/draft/waiting-item silently
+      attach to another user's project or email thread:
+      - `createEmailDraftTool` (AI tool) — now verifies `threadId` belongs to `ctx.userId`
+        before creating the draft; returns `{ok:false}` otherwise.
+      - `createTask`/`updateTask` (Server Actions) — added `ownedProjectId`/`ownedTaskId`
+        helpers in `src/lib/actions/tasks.ts`; `projectId` and `dependsOnId` are now verified
+        before use instead of trusted straight from `FormData`.
+      - `createWaitingItem` (Server Action) — `projectId`/`contactId` now verified the same way.
+      Verified the fix with a temporary route-handler test (removed after): an "attacker" user
+      calling `create_task` with a victim's real `projectId` now gets `task.projectId = null`
+      instead of the victim's id; `create_email_draft` with a victim's `threadId` now returns
+      `{ok:false, error:"Thread not found or not yours."}` instead of silently succeeding.
 - [ ] Fresh re-read of every write path against the confirmation rules in PRODUCT_SPEC.md §20.
 - [ ] Broader multi-timezone correctness pass (see the UTC-vs-local due-date gap noted above).
 6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still

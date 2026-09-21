@@ -28,6 +28,19 @@ function toDate(value?: string) {
   return Number.isNaN(d.getTime()) ? undefined : d;
 }
 
+/** Verifies a projectId/taskId actually belongs to this user before it's trusted as a foreign key. */
+async function ownedProjectId(projectId: string | undefined, userId: string): Promise<string | null> {
+  if (!projectId) return null;
+  const project = await prisma.project.findFirst({ where: { id: projectId, userId }, select: { id: true } });
+  return project?.id ?? null;
+}
+
+async function ownedTaskId(taskId: string | undefined, userId: string): Promise<string | null> {
+  if (!taskId) return null;
+  const task = await prisma.task.findFirst({ where: { id: taskId, userId }, select: { id: true } });
+  return task?.id ?? null;
+}
+
 export type TaskFormState = { error?: string } | undefined;
 
 export async function createTask(
@@ -39,12 +52,15 @@ export async function createTask(
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   const data = parsed.data;
 
+  const projectId = await ownedProjectId(data.projectId, user.id);
+  const dependsOnId = await ownedTaskId(data.dependsOnId, user.id);
+
   const task = await prisma.task.create({
     data: {
       userId: user.id,
       title: data.title,
       description: data.description || null,
-      projectId: data.projectId || null,
+      projectId,
       status: data.status,
       priority: data.priority,
       dueDate: toDate(data.dueDate) ?? null,
@@ -56,9 +72,9 @@ export async function createTask(
     },
   });
 
-  if (data.dependsOnId) {
+  if (dependsOnId) {
     await prisma.taskDependency.create({
-      data: { taskId: task.id, dependsOnId: data.dependsOnId },
+      data: { taskId: task.id, dependsOnId },
     });
   }
 
@@ -71,8 +87,8 @@ export async function createTask(
   });
 
   revalidatePath("/tasks");
-  if (data.projectId) revalidatePath(`/projects/${data.projectId}`);
-  redirect(data.projectId ? `/projects/${data.projectId}` : "/tasks");
+  if (projectId) revalidatePath(`/projects/${projectId}`);
+  redirect(projectId ? `/projects/${projectId}` : "/tasks");
 }
 
 export async function updateTask(
@@ -88,6 +104,7 @@ export async function updateTask(
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid input." };
   const data = parsed.data;
 
+  const projectId = await ownedProjectId(data.projectId, user.id);
   const wasCompleted = existing.status === "COMPLETED";
   const nowCompleted = data.status === "COMPLETED";
 
@@ -96,7 +113,7 @@ export async function updateTask(
     data: {
       title: data.title,
       description: data.description || null,
-      projectId: data.projectId || null,
+      projectId,
       status: data.status,
       priority: data.priority,
       dueDate: toDate(data.dueDate) ?? null,
@@ -120,8 +137,8 @@ export async function updateTask(
 
   revalidatePath("/tasks");
   if (existing.projectId) revalidatePath(`/projects/${existing.projectId}`);
-  if (data.projectId) revalidatePath(`/projects/${data.projectId}`);
-  redirect(data.projectId ? `/projects/${data.projectId}` : "/tasks");
+  if (projectId) revalidatePath(`/projects/${projectId}`);
+  redirect(projectId ? `/projects/${projectId}` : "/tasks");
 }
 
 /** Quick-toggle from a list row (checkbox). Does not redirect. */

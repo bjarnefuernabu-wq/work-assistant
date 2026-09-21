@@ -126,10 +126,16 @@ export const createEmailDraftTool = defineTool({
       });
       projectId = p?.id;
     }
+    let threadId: string | undefined;
+    if (input.threadId) {
+      const thread = await prisma.emailThread.findFirst({ where: { id: input.threadId, userId: ctx.userId }, select: { id: true } });
+      if (!thread) return { ok: false as const, error: "Thread not found or not yours." };
+      threadId = thread.id;
+    }
     const draft = await prisma.emailDraft.create({
       data: {
         userId: ctx.userId,
-        threadId: input.threadId,
+        threadId,
         projectId,
         subject: input.subject,
         bodyText: input.bodyText,
@@ -138,6 +144,6 @@ export const createEmailDraftTool = defineTool({
       },
     });
     revalidatePath("/email");
-    return { draftId: draft.id };
+    return { ok: true as const, draftId: draft.id };
   },
 });
