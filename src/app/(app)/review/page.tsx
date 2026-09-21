@@ -125,14 +125,18 @@ export default async function WeeklyReviewPage() {
         </Panel>
 
         <Panel title="Suggested priorities">
-          <div className="divide-y divide-border">
-            {review.suggestedPriorities.map((t, i) => (
-              <Link key={t.id} href={`/tasks/${t.id}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-raised">
-                <span className="text-xs text-subtle">{i + 1}</span>
-                <span className="text-foreground">{t.title}</span>
-              </Link>
-            ))}
-          </div>
+          {review.suggestedPriorities.length === 0 ? (
+            <EmptyState title="No open tasks" />
+          ) : (
+            <div className="divide-y divide-border">
+              {review.suggestedPriorities.map((t, i) => (
+                <Link key={t.id} href={`/tasks/${t.id}`} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-surface-raised">
+                  <span className="text-xs text-subtle">{i + 1}</span>
+                  <span className="text-foreground">{t.title}</span>
+                </Link>
+              ))}
+            </div>
+          )}
         </Panel>
       </div>
     </div>

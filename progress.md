@@ -174,9 +174,18 @@ real, working page against real seeded data; nothing 404s from the sidebar anymo
         worth a proper fix (store/compare dates consistently, e.g. always in UTC calendar days)
         before this app is used by someone outside UTC-adjacent timezones. Left as a known gap
         rather than a rushed fix.
-- [ ] Remaining edge/empty/error states pass.
+- [x] **First-time-user pass**: created a second, completely empty user and clicked through
+      Dashboard, Projects, Planning (day + week), Weekly Review, Email, Activity Log, and the AI
+      Assistant. Nothing crashed; every page showed a sensible empty state (Dashboard: "nothing
+      overdue" / "nothing needs attention"; Projects: "No projects yet" + CTA; generating a
+      daily plan with zero tasks/events still correctly produced just the triage + follow-up
+      routine blocks; the assistant answered "0 event(s), 0 overdue..." instead of erroring).
+      Found and fixed two small polish issues along the way: `formatMinutes(0)` was rendering
+      as "—" (looked like missing data, not "zero"); the Weekly Review's "Suggested priorities"
+      panel had no empty-state message when there were no open tasks. Test user + script
+      removed after; `npm run db:seed` restores the normal demo user.
 - [ ] Fresh re-read of every write path against the confirmation rules in PRODUCT_SPEC.md §20.
-- [ ] First-time-user pass (no demo data) to check empty states end to end.
+- [ ] Broader multi-timezone correctness pass (see the UTC-vs-local due-date gap noted above).
 6. Search (`/search`), Activity log (`/activity`), Settings (`/settings`) pages — all still
    placeholder-free gaps; nav links to them already exist and currently 404.
 

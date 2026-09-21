@@ -29,7 +29,8 @@ export function formatRelativeAge(date: Date | string): string {
 }
 
 export function formatMinutes(minutes: number | null | undefined): string {
-  if (!minutes) return "—";
+  if (minutes === null || minutes === undefined) return "—";
+  if (minutes === 0) return "0m";
   if (minutes < 60) return `${minutes}m`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
